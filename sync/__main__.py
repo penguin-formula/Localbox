@@ -14,6 +14,7 @@ from loxcommon import os_utils
 from loxcommon.log import prepare_logging
 from loxcommon.os_utils import open_file_ext
 from sync import defaults
+from sync import event_handler
 from sync.controllers import openfiles_ctrl
 from sync.controllers.localbox_ctrl import ctrl as sync_ctrl
 from sync.controllers.login_ctrl import LoginController
@@ -47,6 +48,14 @@ def run_sync_daemon():
         MAIN.start()
 
         taskbarmain(MAIN)
+    except Exception as error:  # pylint: disable=W0703
+        getLogger(__name__).exception(error)
+
+
+def run_event_daemon():
+    try:
+        for runner in event_handler.get_event_runners():
+            runner.start()
     except Exception as error:  # pylint: disable=W0703
         getLogger(__name__).exception(error)
 
@@ -150,4 +159,5 @@ if __name__ == '__main__':
 
         run_file_decryption(filename)
     else:
+        run_event_daemon()
         run_sync_daemon()
