@@ -75,7 +75,7 @@ def run_file_decryption(filename):
             if filename.startswith(sync_path):
                 localbox_filename = os_utils.remove_extension(filename.replace(sync_item.path, ''),
                                                               defaults.LOCALBOX_EXTENSION)
-                localbox_client = LocalBox(sync_item.url, sync_item.label)
+                localbox_client = LocalBox(sync_item.url, sync_item.label, sync_item.path)
                 break
 
         if not localbox_client or not localbox_filename:

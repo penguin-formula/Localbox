@@ -607,7 +607,7 @@ class NewSharePanel(wx.Panel):
     @property
     def localbox_client(self):
         localbox_item = localbox_ctrl.ctrl.get(self.selected_localbox)
-        return LocalBox(url=localbox_item.url, label=localbox_item.label)
+        return LocalBox(url=localbox_item.url, label=localbox_item.label, path=localbox_item.path)
 
     @property
     def localbox_path(self):

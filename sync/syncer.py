@@ -398,7 +398,7 @@ def get_syncers():
             path = sync_item.path
             direction = sync_item.direction
             label = sync_item.label
-            localbox_client = LocalBox(url, label)
+            localbox_client = LocalBox(url, label, path)
 
             syncer = Syncer(localbox_client, path, direction, name=sync_item.label)
             sites.append(syncer)

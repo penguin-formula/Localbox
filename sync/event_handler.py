@@ -1,3 +1,4 @@
+import os
 import time
 from ConfigParser import NoOptionError
 from logging import getLogger
@@ -7,12 +8,33 @@ from urllib2 import URLError
 from watchdog.events import LoggingEventHandler
 from watchdog.observers import Observer
 
+import sync.defaults as defaults
+from sync.controllers import openfiles_ctrl
 from sync.controllers.localbox_ctrl import SyncsController
-from sync.localbox import LocalBox
+from sync.controllers.login_ctrl import LoginController
+from sync.localbox import LocalBox, get_localbox_path
 
 
 class LocalBoxEventHandler(LoggingEventHandler):
     """Logs all the events captured."""
+
+    def __init__(self, localbox_client):
+        self.localbox_client = localbox_client
+
+    def on_created(self, event):
+        super(LoggingEventHandler, self).on_created(event)
+
+        if event.is_directory:
+            self.localbox_client.create_directory(get_localbox_path(self.localbox_client.path, event.src_path))
+        elif _should_upload_file(event.src_path):
+            self.localbox_client.upload_file(fs_path=event.src_path,
+                                             path=get_localbox_path(self.localbox_client.path, event.src_path),
+                                             passphrase=LoginController().get_passphrase(self.localbox_client.label))
+
+
+def _should_upload_file(path):
+    return not path.endswith(defaults.LOCALBOX_EXTENSION) and os.path.getsize(
+        path) > 0 and path not in openfiles_ctrl.load()
 
 
 def get_event_runners():
@@ -25,7 +47,7 @@ def get_event_runners():
         try:
             url = sync_item.url
             label = sync_item.label
-            localbox_client = LocalBox(url, label)
+            localbox_client = LocalBox(url, label, sync_item.path)
 
             runner = LocalBoxEventRunner(localbox_client=localbox_client)
             runners.append(runner)
@@ -56,7 +78,7 @@ class LocalBoxEventRunner(Thread):
         Function that runs one iteration of the synchronization
         """
         getLogger(__name__).debug('running event handler: ' + self.localbox_client.label)
-        event_handler = LocalBoxEventHandler()
+        event_handler = LocalBoxEventHandler(self.localbox_client)
         observer = Observer()
         observer.schedule(event_handler, SyncsController().get(self.localbox_client.label).path, recursive=True)
         observer.start()

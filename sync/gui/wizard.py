@@ -129,7 +129,7 @@ class NewSyncInputsWizardPage(WizardPageSimple):
                                       path=path)
 
             try:
-                self.parent.localbox_client = LocalBox(url, label)
+                self.parent.localbox_client = LocalBox(url, label, path)
             except (URLError, BadStatusLine, ValueError,
                     auth.AlreadyAuthenticatedError) as error:
                 getLogger(__name__).debug("error with authentication url thingie")
