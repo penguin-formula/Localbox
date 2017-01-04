@@ -21,6 +21,9 @@ class LocalBoxEventHandler(LoggingEventHandler):
     def __init__(self, localbox_client):
         self.localbox_client = localbox_client
 
+    def on_moved(self, event):
+        super(LoggingEventHandler, self).on_moved(event)
+
     def on_created(self, event):
         super(LoggingEventHandler, self).on_created(event)
 
