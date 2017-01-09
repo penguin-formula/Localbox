@@ -279,6 +279,11 @@ class SharePanel(wx.Panel):
             worker = PopulateThread(self, self.ctrl.load)
             worker.start()
 
+            if len(SyncsController()) > 0:
+                self.btn_add.Enable(True)
+            else:
+                self.btn_add.Enable(False)
+
     def on_populate(self, wx_event):
         self.ctrl.populate(wx_event.get_value())
 

@@ -59,6 +59,9 @@ class SyncsController(object):
     def __iter__(self):
         return self._list.__iter__()
 
+    def __len__(self):
+        return self._list.__len__()
+
 
 class SyncItem:
     def __init__(self, label=None, url=None, path=None, direction=None, user=None, shares=None):
