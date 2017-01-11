@@ -3,8 +3,11 @@ Contributions
 
 NOTE: This guide has some instructions that are specific to our current development specs (Ubuntu 16.04).
 
-Start Developing
-================
+Setup development environment
+=============================
+
+Hard Way
+--------
 
 .. code:: bash
 
@@ -16,6 +19,74 @@ Start Developing
     git checkout develop
     # compile the translations
     make translations
+
+
+Easy Way
+--------
+
+Comming soon!
+
+
+Start Contributing
+==================
+
+There are two kinds of LocalBox contributors: internal and external. The internal contributors are the developers in the
+LocalBox team.
+
+External Contributions
+----------------------
+
+LocalBox has 4 repositories hosted here: https://github.com/yourlocalbox, fork one of them:
+
+.. image:: ../_static/fork.jpg
+
+Then clone it (``git clone``).
+
+.. image:: ../_static/clone.jpg
+
+Do your git setup:
+
+.. code:: bash
+
+    git config --global user.name "Your Name"
+    git config --global user.email your@mail.info
+
+You should do your development based on the ``develop`` branch, so first checkout this branch:
+
+.. code:: bash
+
+    git checkout develop
+
+It's a good idea to keep track of the upstream project, because unless you are doing a very quick fix chances are that
+there is new code in the upstream project and your new code has to work with it in order to be merged.
+
+Start by configuring the upstream project:
+
+.. code:: bash
+
+    git remote add --track develop upstream https://github.com/yourlocalbox/LinWin-PySync.git
+
+To update your code use
+
+.. code:: bash
+
+    git fetch upstream
+    git merge upstream/develop
+
+When you are done with your development and testing you can create a **Pull request** to merge your changes into the
+main repository. Make sure to select the ``develop`` branch.
+
+.. image:: ../_static/pull_request.jpg
+
+Someone from the LocalBox development team will review your code and merge it.
+
+Internal Contributions
+----------------------
+
+We develop LocalBox based on the `Vincent Driessen <http://nvie.com/posts/a-successful-git-branching-model/>`_
+branching model with the help of
+`git flow <http://danielkummer.github.io/git-flow-cheatsheet/>`_.
+Start by installing git flow (see :ref:`Git Flow`)
 
 Solving a bug? Create your branch with (replace <ISSUE_NUMBER> with the appropriate number):
 
@@ -29,14 +100,28 @@ Creating a new feature ? Create your branch with (replace <ISSUE_NUMBER> with th
 
     git flow feature start LOXGUI-<ISSUE_NUMBER>
 
-Dependencies
-============
+
+Development Dependencies
+========================
+
+Git Flow
+--------
+
+.. code:: bash
+
+    sudo apt-get install git-flow
+
+WxPython
+--------
 
 To install ``wx`` via ``pip`` you need to install:
 
 .. code:: bash
 
     sudo apt-get install dpkg-dev build-essential python2.7-dev libwebkitgtk-dev libjpeg-dev libtiff-dev libgtk2.0-dev libsdl1.2-dev libgstreamer-plugins-base0.10-dev libnotify-dev freeglut3 freeglut3-dev -y
+
+Translations
+------------
 
 To run ``make translations`` you need ``msgfmt.py`` in your path. It can be found in the Debian packages
 ``python2.7-examples`` or ``python3.5-examples``:
@@ -181,3 +266,27 @@ Testing on Windows
 ==================
 
 You can download a free VirtualBox machine from here: https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/
+
+
+Merge from public repository
+============================
+
+.. code:: bash
+
+    cd path/to/private/project/
+    git remote add public-project-1 public-project-remote-url
+    git fetch public-project-1
+    git merge public-project-1/develop  # <--- branch to merge
+    git remote remove public-project-1
+
+
+Example
+-------
+
+.. code:: bash
+
+    cd ~/github/LocalBox/LinWin-PySync
+    git remote add LinWin https://github.com/yourlocalbox/LinWin-PySync.git
+    git merge LinWin/develop
+    git remote remove LinWin
+    git push
