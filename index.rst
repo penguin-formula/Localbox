@@ -17,6 +17,7 @@ Contents:
     docs/source/contributions.rst
     docs/source/usermanual.rst
     docs/source/faq.rst
+    docs/source/troubleshooting.rst
 
 Indices and tables
 ==================
