@@ -2,5 +2,5 @@ pycrypto==2.6.1
 python-gnupg==0.3.8
 six==1.10.0
 wheel==0.24.0
-wxPython-Phoenix==3.0.3
+#wx==3.0.3
 watchdog==0.8.3
