@@ -187,8 +187,8 @@ class SyncsPanel(wx.Panel):
         self._main_syncing_thread = main_syncing_thread
         self.event = event
         self.ctrl = LocalboxListCtrl(self)
-        self.btn_add_localbox = wx.Button(self, label=_('Add'), size=(70, 30))
-        self.btn_delete = wx.Button(self, label=_('Delete'), size=(70, 30))
+        self.btn_add_localbox = wx.Button(self, label=_('Add'), size=(100, 30))
+        self.btn_delete = wx.Button(self, label=_('Delete'), size=(100, 30))
 
         # Layout
         self._DoLayout()
@@ -235,8 +235,8 @@ class SharePanel(wx.Panel):
 
         # Attributes
         self.ctrl = SharesListCtrl(self)
-        self.btn_add = wx.Button(self, label=_('Add'), size=(70, 30))
-        self.btn_delete = wx.Button(self, label=_('Delete'), size=(70, 30))
+        self.btn_add = wx.Button(self, label=_('Add'), size=(100, 30))
+        self.btn_delete = wx.Button(self, label=_('Delete'), size=(100, 30))
 
         # Layout
         self._DoLayout()
