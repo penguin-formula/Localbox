@@ -24,7 +24,31 @@ Hard Way
 Easy Way
 --------
 
-Comming soon!
+Install `VirtualBox <https://www.virtualbox.org>`_ and `Vagrant <http://vagrantup.com>`_.
+
+.. code:: bash
+
+    git clone https://github.com/yourlocalbox/localbox-dev-box.git
+    cd localbox-dev-box
+    vagrant up
+
+The virtual machine if configured to start in GUI mode. Change from ``True`` to ``False`` this line on Vagranfile to
+make it console only:
+
+.. code:: bash
+
+    vb.gui = False
+
+Then you can access the virtual machine with:
+
+.. code:: bash
+
+    $ vagrant ssh
+
+Ports 5000 (loauth) and 5001 (localbox) are being forward to the host machine. So you can use
+``https://vagrant-localbox:5001`` as your LocalBox URL in the client.
+
+For more details and tips check the ``README`` of the project ``localbox-dev-box``.
 
 
 Start Contributing
