@@ -1,7 +1,6 @@
-import pkg_resources
-import wx
-import wx.lib.mixins.listctrl as listmix
 from logging import getLogger
+
+import wx
 
 from sync.controllers import localbox_ctrl
 from sync.controllers.account_ctrl import AccountController
@@ -51,7 +50,7 @@ class Gui(wx.Frame):
         self._main_syncing_thread = main_syncing_thread
         self.event = event
         self.toolbar_panels = dict()
-        self.panel_syncs = SyncsPanel(self, event, main_syncing_thread)
+        self.panel_syncs = LocalboxPanel(self, event, main_syncing_thread)
         self.panel_shares = SharePanel(self)
         self.panel_account = AccountPanel(self)
         self.panel_preferences = PreferencesPanel(self)
@@ -175,9 +174,9 @@ class Gui(wx.Frame):
 # ----------------------------------- #
 # ----       MAIN PANELS         ---- #
 # ----------------------------------- #
-class SyncsPanel(wx.Panel):
+class LocalboxPanel(wx.Panel):
     """
-    Custom Panel containing a ListCtrl to list the syncs/localboxes
+    Custom Panel containing a ListCtrl to list the localboxes
     """
 
     def __init__(self, parent, event, main_syncing_thread):
@@ -194,7 +193,7 @@ class SyncsPanel(wx.Panel):
         self._DoLayout()
 
         # Bind events
-        self.Bind(wx.EVT_BUTTON, self.newSyncDialog, self.btn_add_localbox)
+        self.Bind(wx.EVT_BUTTON, self.newLocalBoxDialog, self.btn_add_localbox)
         self.Bind(wx.EVT_BUTTON, self.delete_localbox, self.btn_delete)
 
         # Setup
@@ -219,10 +218,17 @@ class SyncsPanel(wx.Panel):
 
         self.SetSizer(vbox)
 
-    def newSyncDialog(self, wx_event):
+    def newLocalBoxDialog(self, wx_event):
         NewSyncWizard(self.ctrl, self.event)
 
     def delete_localbox(self, wx_event):
+        """
+        Callback responsible for deleting the configuration of the selected localboxes.
+        It also stops the syncing thread for each label.
+
+        :param wx_event:
+        :return: None
+        """
         map(lambda l: self._main_syncing_thread.stop(l), self.ctrl.delete())
 
 
@@ -663,6 +669,11 @@ class LocalboxListCtrl(wx.ListCtrl):
         self.ctrl.add(item)
 
     def delete(self):
+        """
+        Delete the configuration for the selected localboxes.
+
+        :return: the list with the labels of localboxes deleted.
+        """
         idx = 0
         labels_removed = []
         while idx > -1:
