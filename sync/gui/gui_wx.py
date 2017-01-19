@@ -174,27 +174,41 @@ class Gui(wx.Frame):
 # ----------------------------------- #
 # ----       MAIN PANELS         ---- #
 # ----------------------------------- #
-class LocalboxPanel(wx.Panel):
+class LoxPanel(wx.Panel):
+    def __init__(self, parent=None, id=None, pos=None, size=None, style=None, name=None):
+        wx.Panel.__init__(self, parent, id=wx.ID_ANY, size=MAIN_PANEL_SIZE)
+
+        self.btn_add = wx.Button(self, label=_('Add'), size=(100, 30))
+        self.btn_del = wx.Button(self, label=_('Delete'), size=(100, 30))
+
+        # Bind events
+        self.Bind(wx.EVT_BUTTON, self.on_btn_add, self.btn_add)
+        self.Bind(wx.EVT_BUTTON, self.on_btn_del, self.btn_del)
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_list_item_selected)
+        self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._on_list_item_deselected)
+
+    def _on_list_item_selected(self, wx_event):
+        self.btn_del.Enable(True)
+
+    def _on_list_item_deselected(self, wx_event):
+        self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
+
+
+class LocalboxPanel(LoxPanel):
     """
     Custom Panel containing a ListCtrl to list the localboxes
     """
 
     def __init__(self, parent, event, main_syncing_thread):
-        wx.Panel.__init__(self, parent, id=wx.ID_ANY, size=MAIN_PANEL_SIZE)
+        LoxPanel.__init__(self, parent, id=wx.ID_ANY, size=MAIN_PANEL_SIZE)
 
         # Attributes
         self._main_syncing_thread = main_syncing_thread
         self.event = event
         self.ctrl = LocalboxListCtrl(self)
-        self.btn_add_localbox = wx.Button(self, label=_('Add'), size=(100, 30))
-        self.btn_delete = wx.Button(self, label=_('Delete'), size=(100, 30))
 
         # Layout
         self._DoLayout()
-
-        # Bind events
-        self.Bind(wx.EVT_BUTTON, self.newLocalBoxDialog, self.btn_add_localbox)
-        self.Bind(wx.EVT_BUTTON, self.delete_localbox, self.btn_delete)
 
         # Setup
         self.ctrl.populate_list()
@@ -204,24 +218,25 @@ class LocalboxPanel(wx.Panel):
 
         hbox3 = wx.BoxSizer(wx.HORIZONTAL)
         hbox3.Add(self.ctrl, proportion=1, flag=wx.EXPAND)
-        vbox.Add(hbox3, proportion=1, flag=wx.LEFT | wx.RIGHT | wx.EXPAND,
-                 border=10)
+        vbox.Add(hbox3, proportion=1, flag=wx.LEFT | wx.RIGHT | wx.EXPAND, border=10)
 
         vbox.Add((-1, 25))
 
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
-        hbox4.Add(self.btn_add_localbox)
-        hbox4.Add(self.btn_delete)
+        hbox4.Add(self.btn_add)
+        hbox4.Add(self.btn_del)
         vbox.Add(hbox4, flag=wx.ALIGN_RIGHT | wx.RIGHT, border=10)
 
         vbox.Add((-1, 25))
 
         self.SetSizer(vbox)
 
-    def newLocalBoxDialog(self, wx_event):
+        self.btn_del.Enable(False)
+
+    def on_btn_add(self, wx_event):
         NewSyncWizard(self.ctrl, self.event)
 
-    def delete_localbox(self, wx_event):
+    def on_btn_del(self, wx_event):
         """
         Callback responsible for deleting the configuration of the selected localboxes.
         It also stops the syncing thread for each label.
@@ -232,24 +247,21 @@ class LocalboxPanel(wx.Panel):
         map(lambda l: self._main_syncing_thread.stop(l), self.ctrl.delete())
 
 
-class SharePanel(wx.Panel):
+class SharePanel(LoxPanel):
     """
     """
 
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, id=wx.ID_ANY, size=MAIN_PANEL_SIZE)
+        LoxPanel.__init__(self, parent, id=wx.ID_ANY, size=MAIN_PANEL_SIZE)
 
         # Attributes
         self.ctrl = SharesListCtrl(self)
-        self.btn_add = wx.Button(self, label=_('Add'), size=(100, 30))
-        self.btn_delete = wx.Button(self, label=_('Delete'), size=(100, 30))
+        self.ctrl_lox = SyncsController()
 
         # Layout
         self._DoLayout()
 
         # Bind events
-        self.Bind(wx.EVT_BUTTON, self.create_share, self.btn_add)
-        self.Bind(wx.EVT_BUTTON, self.delete_share, self.btn_delete)
         self.Bind(wx.EVT_SHOW, self.on_show)
         self.Bind(EVT_POPULATE, self.on_populate)
 
@@ -258,24 +270,26 @@ class SharePanel(wx.Panel):
 
         hbox3 = wx.BoxSizer(wx.HORIZONTAL)
         hbox3.Add(self.ctrl, proportion=1, flag=wx.EXPAND)
-        vbox.Add(hbox3, proportion=1, flag=wx.LEFT | wx.RIGHT | wx.EXPAND,
-                 border=10)
+        vbox.Add(hbox3, proportion=1, flag=wx.LEFT | wx.RIGHT | wx.EXPAND, border=10)
 
         vbox.Add((-1, 25))
 
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
         hbox4.Add(self.btn_add)
-        hbox4.Add(self.btn_delete)
+        hbox4.Add(self.btn_del)
         vbox.Add(hbox4, flag=wx.ALIGN_RIGHT | wx.RIGHT, border=10)
 
         vbox.Add((-1, 25))
 
+        self.btn_add.Enable(len(self.ctrl_lox) > 0)
+        self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
+
         self.SetSizer(vbox)
 
-    def create_share(self, wx_event):
+    def on_btn_add(self, wx_event):
         NewShareDialog(self, self.ctrl)
 
-    def delete_share(self, wx_event):
+    def on_btn_del(self, wx_event):
         question = _('This will also delete the directory in your LocalBox and for all users. Continue?')
         if gui_utils.show_confirm_dialog(self, question):
             self.ctrl.delete()
@@ -285,10 +299,7 @@ class SharePanel(wx.Panel):
             worker = PopulateThread(self, self.ctrl.load)
             worker.start()
 
-            if len(SyncsController()) > 0:
-                self.btn_add.Enable(True)
-            else:
-                self.btn_add.Enable(False)
+            self.btn_add.Enable(len(self.ctrl_lox) > 0)
 
     def on_populate(self, wx_event):
         self.ctrl.populate(wx_event.get_value())

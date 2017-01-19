@@ -60,6 +60,7 @@ class SyncsController(object):
         return self._list.__iter__()
 
     def __len__(self):
+        self.load()
         return self._list.__len__()
 
 
