@@ -542,6 +542,7 @@ class NewSharePanel(wx.Panel):
 
     def OnChoice(self, event):
         self.btn_select_dir.Enable()
+        self.list.Clear()
         worker = PopulateThread(self, self.localbox_client.get_all_users)
         worker.start()
 

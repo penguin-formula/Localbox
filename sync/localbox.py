@@ -365,14 +365,18 @@ class LocalBox(object):
 
     def get_share_list(self, user):
         """
-        Share directory with users.
+        List shares of given user.
 
         :return: True if success, False otherwise
         """
         request = Request(url=self.url + 'lox_api/shares/user/' + user)
 
         try:
-            return loads(self._make_call(request).read())
+            result = self._make_call(request).read()
+            if result != '' and result is not None:
+                return loads(result)
+            else:
+                return []
         except Exception as error:
             getLogger(__name__).exception(error)
             return []

@@ -60,7 +60,10 @@ class SharesController(object):
                 localbox_client = LocalBox(url=item.url, label=item.label)
 
                 for share in localbox_client.get_share_list(user=item.user):
-                    share_item = ShareItem(user=share['user'], path='/' + share['path'], url=item.url, label=item.label,
+                    share_item = ShareItem(user=share['user'],
+                                           path='/' + share['path'],
+                                           url=item.url,
+                                           label=item.label,
                                            id=share['id'])
                     self._list.append(share_item)
             except URLError:
