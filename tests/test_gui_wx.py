@@ -1,5 +1,5 @@
-from __future__ import \
-    absolute_import  # to avoid: RuntimeWarning: Parent module 'test' not found while handling absolute import
+# to avoid: RuntimeWarning: Parent module 'test' not found while handling absolute import
+from __future__ import absolute_import
 
 import unittest
 
