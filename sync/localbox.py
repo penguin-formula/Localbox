@@ -16,6 +16,7 @@ from logging import getLogger
 from os import stat, remove
 from socket import error as SocketError
 
+from loxcommon import os_utils
 from sync import defaults
 from sync.auth import Authenticator, AlreadyAuthenticatedError
 from sync.gpg import gpg
@@ -258,7 +259,7 @@ class LocalBox(object):
         :return: the key for symmetric encryption in the form: (key, iv)
         """
         pgp_client = gpg()
-        keys_path = LocalBox.get_keys_path(path)
+        keys_path = os_utils.get_keys_path(path)
         keys_path = quote_plus(keys_path)
         getLogger(__name__).debug("call lox_api/key on path %s = %s", path, keys_path)
 
@@ -271,59 +272,6 @@ class LocalBox(object):
         getLogger(__name__).debug("Got key %s for path %s", getChecksum(key), path)
 
         return key, iv
-
-    @staticmethod
-    def get_keys_path_v2(localbox_path):
-        """
-        Get the keys location for this localbox path.
-
-        >>> LocalBox.get_keys_path('/a/b/c')
-        'a/b'
-        >>> LocalBox.get_keys_path('a')
-        'a'
-        >>> LocalBox.get_keys_path('/a/b/c/')
-        'a/b/c'
-        >>> LocalBox.get_keys_path('a/b')
-        'a'
-
-        :param localbox_path:
-        :return: it returns the parent 'directory'
-        """
-        slash_count = localbox_path.count('/')
-        if slash_count > 1:
-            keys_path = os.path.dirname(localbox_path).lstrip('/')
-        elif slash_count == 1 and localbox_path.index('/') > 0:
-            keys_path = os.path.dirname(localbox_path).lstrip('/')
-        else:
-            keys_path = localbox_path
-
-        getLogger(__name__).debug('keys_path for localbox_path "%s" is "%s"' % (localbox_path, keys_path))
-        return keys_path
-
-    @staticmethod
-    def get_keys_path(localbox_path):
-        """
-        Get the keys location for this localbox path.
-
-        >>> LocalBox.get_keys_path('/a/b/c')
-        'a'
-        >>> LocalBox.get_keys_path('a')
-        'a'
-        >>> LocalBox.get_keys_path('/a/b/c/')
-        'a'
-        >>> LocalBox.get_keys_path('a/b')
-        'a'
-
-        :param localbox_path:
-        :return: it returns the parent 'directory'
-        """
-        if localbox_path.startswith('/'):
-            localbox_path = localbox_path[1:]
-
-        keys_path = localbox_path.split('/')[0]
-
-        getLogger(__name__).debug('keys_path for localbox_path "%s" is "%s"' % (localbox_path, keys_path))
-        return keys_path
 
     def get_all_users(self):
         """
@@ -392,7 +340,7 @@ class LocalBox(object):
         :param user:
         :return:
         """
-        cryptopath = LocalBox.get_keys_path(path)
+        cryptopath = os_utils.get_keys_path(path)
         cryptopath = quote_plus(cryptopath)
 
         site = self.authenticator.label
@@ -531,9 +479,3 @@ class InvalidLocalBoxPathError(Exception):
 
     def __str__(self):
         return '%s is not a valid LocalBox path' % self.path
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()

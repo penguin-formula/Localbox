@@ -303,7 +303,7 @@ class SharePanel(LoxPanel):
 
     def on_populate(self, wx_event):
         self.ctrl.populate(wx_event.get_value())
-
+        self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
 
 class AccountPanel(wx.Panel):
     """
@@ -752,7 +752,7 @@ class SharesListCtrl(LoxListCtrl):
         super(SharesListCtrl, self).__init__(parent, SharesController())
 
         self.InsertColumn(0, _("Label"))
-        self.InsertColumn(1, _("User"))
+        self.InsertColumn(1, _("Owner"))
         self.InsertColumn(2, _("Path"))
         self.InsertColumn(3, _("URL"))
 
