@@ -616,6 +616,7 @@ class ShareEditPanel(wx.Panel):
 
         self._btn_ok = wx.Button(self, id=wx.ID_OK, label=_('Ok'))
         self._btn_close = wx.Button(self, id=wx.ID_CLOSE, label=_('Close'))
+        self._btn_remove = wx.Button(self, id=wx.ID_REMOVE, label=_('Remove'))
 
         # Layout
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -626,6 +627,10 @@ class ShareEditPanel(wx.Panel):
         sizer.Add(sizer_sel_dir, 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
         sizer.Add(wx.StaticText(self, label=_('You are sharing with:')), 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
         sizer.Add(self.list, proportion=1, flag=wx.EXPAND | wx.ALL, border=DEFAULT_BORDER)
+
+        sizer_list_actions = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_list_actions.Add(self._btn_remove)
+        sizer.Add(sizer_list_actions, proportion=1, flag=wx.EXPAND | wx.ALL, border=DEFAULT_BORDER)
 
         btn_szr = wx.StdDialogButtonSizer()
 
@@ -643,6 +648,7 @@ class ShareEditPanel(wx.Panel):
         # Event Handlers
         self.Bind(wx.EVT_BUTTON, self.OnClickOk, id=self._btn_ok.Id)
         self.Bind(wx.EVT_BUTTON, self.OnClickClose, id=self._btn_close.Id)
+        self.Bind(wx.EVT_BUTTON, self.on_click_remove, id=self._btn_remove.Id)
 
         self.SetSizer(main_sizer)
 
@@ -653,6 +659,10 @@ class ShareEditPanel(wx.Panel):
 
     def OnClickClose(self, event):
         self.parent.OnClickClose(event)
+
+    def on_click_remove(self, wx_event):
+        user_list = self.list.CheckedStrings
+        self.localbox_client.remove_users_from_share(self.share.id, user_list)
 
     def on_populate(self):
         result = self.localbox_client.get_share_user_list(self.share.id)

@@ -333,7 +333,7 @@ class LocalBox(object):
         """
         List users of a given share.
 
-        :return: True if success, False otherwise
+        :return: List with the users if success, empty list otherwise
         """
         request = Request(url=self.url + 'lox_api/shares/' + str(share_id))
 
@@ -346,6 +346,25 @@ class LocalBox(object):
         except Exception as error:
             getLogger(__name__).exception(error)
             return []
+
+    def remove_users_from_share(self, share_id, user_list):
+        """
+        List users of a given share.
+
+        :return: True if success, False otherwise
+        """
+        request = Request(url=self.url + 'lox_api/shares/' + str(share_id) + '/edit',
+                          data=dumps(user_list))
+
+        try:
+            result = self._make_call(request).read()
+            if result != '' and result is not None:
+                return True
+            else:
+                return False
+        except Exception as error:
+            getLogger(__name__).exception(error)
+            return False
 
     def save_key(self, user, path, key, iv):
         """
