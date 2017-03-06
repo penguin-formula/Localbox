@@ -79,6 +79,12 @@ class SharesController(object):
     def __len__(self):
         return self._list.__len__()
 
+    def __getitem__(self, index):
+        return self._list[index]
+
+    def __setitem__(self, index, value):
+        self._list[index] = value
+
 
 class ShareItem(object):
     def __init__(self, user=None, path=None, url=None, label=None, id=None):

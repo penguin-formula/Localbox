@@ -1,4 +1,5 @@
 from logging import getLogger
+from json import loads
 
 import wx
 
@@ -257,6 +258,7 @@ class SharePanel(LoxPanel):
         # Attributes
         self.ctrl = SharesListCtrl(self)
         self.ctrl_lox = SyncsController()
+        self.btn_edit = wx.Button(self, label=_('Edit'), size=(100, 30))
 
         # Layout
         self._DoLayout()
@@ -264,6 +266,7 @@ class SharePanel(LoxPanel):
         # Bind events
         self.Bind(wx.EVT_SHOW, self.on_show)
         self.Bind(EVT_POPULATE, self.on_populate)
+        self.Bind(wx.EVT_BUTTON, self.on_btn_edit, self.btn_edit)
 
     def _DoLayout(self):
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -277,12 +280,14 @@ class SharePanel(LoxPanel):
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
         hbox4.Add(self.btn_add)
         hbox4.Add(self.btn_del)
+        hbox4.Add(self.btn_edit)
         vbox.Add(hbox4, flag=wx.ALIGN_RIGHT | wx.RIGHT, border=10)
 
         vbox.Add((-1, 25))
 
         self.btn_add.Enable(len(self.ctrl_lox) > 0)
         self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
+        self.btn_edit.Enable(self.ctrl.GetSelectedItemCount() > 0)
 
         self.SetSizer(vbox)
 
@@ -294,6 +299,14 @@ class SharePanel(LoxPanel):
         if gui_utils.show_confirm_dialog(self, question):
             self.ctrl.delete()
 
+    def on_btn_edit(self, wx_event):
+        share = None
+        for row in range(self.ctrl.GetItemCount()):
+            if self.ctrl.IsSelected(row):
+                share = self.ctrl.list[row]
+                break
+        ShareEditDialog(self, share)
+
     def on_show(self, wx_event=None):
         if self.IsShown():
             worker = PopulateThread(self, self.ctrl.load)
@@ -304,6 +317,16 @@ class SharePanel(LoxPanel):
     def on_populate(self, wx_event):
         self.ctrl.populate(wx_event.get_value())
         self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
+        self.btn_edit.Enable(self.ctrl.GetSelectedItemCount() > 0)
+
+    def _on_list_item_deselected(self, wx_event):
+        super(SharePanel, self)._on_list_item_deselected(wx_event)
+        self.btn_edit.Enable(self.ctrl.GetSelectedItemCount() > 0)
+
+    def _on_list_item_selected(self, wx_event):
+        super(SharePanel, self)._on_list_item_selected(wx_event)
+        self.btn_edit.Enable(True)
+
 
 class AccountPanel(wx.Panel):
     """
@@ -579,6 +602,69 @@ class NewSharePanel(wx.Panel):
         return self.choice.GetString(self.choice.GetSelection())
 
 
+class ShareEditPanel(wx.Panel):
+    def __init__(self, parent, share):
+        super(ShareEditPanel, self).__init__(parent=parent)
+
+        # Attributes
+        self.parent = parent
+        self.share = share
+
+        self.users = None
+        self.list = wx.CheckListBox(self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize)
+        self._selected_dir = wx.TextCtrl(self, style=wx.TE_READONLY)
+
+        self._btn_ok = wx.Button(self, id=wx.ID_OK, label=_('Ok'))
+        self._btn_close = wx.Button(self, id=wx.ID_CLOSE, label=_('Close'))
+
+        # Layout
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer_sel_dir = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(wx.StaticText(self, label=_('Share:')), 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
+        self._selected_dir.SetValue(self.share.path)
+        sizer_sel_dir.Add(self._selected_dir, 1)
+        sizer.Add(sizer_sel_dir, 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
+        sizer.Add(wx.StaticText(self, label=_('You are sharing with:')), 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
+        sizer.Add(self.list, proportion=1, flag=wx.EXPAND | wx.ALL, border=DEFAULT_BORDER)
+
+        btn_szr = wx.StdDialogButtonSizer()
+
+        btn_szr.AddButton(self._btn_ok)
+        btn_szr.AddButton(self._btn_close)
+
+        btn_szr.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(sizer, 1, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
+        main_sizer.Add(wx.StaticLine(self, -1), 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
+        main_sizer.Add(btn_szr, border=DEFAULT_BORDER)
+        main_sizer.Add(wx.StaticText(self, label=''), 0, wx.ALL | wx.EXPAND)
+
+        # Event Handlers
+        self.Bind(wx.EVT_BUTTON, self.OnClickOk, id=self._btn_ok.Id)
+        self.Bind(wx.EVT_BUTTON, self.OnClickClose, id=self._btn_close.Id)
+
+        self.SetSizer(main_sizer)
+
+        self.on_populate()
+
+    def OnClickOk(self, event):
+        self.parent.OnClickClose(event)
+
+    def OnClickClose(self, event):
+        self.parent.OnClickClose(event)
+
+    def on_populate(self):
+        result = self.localbox_client.get_share_user_list(self.share.id)
+        lst = result["receivers"]
+        map(lambda x: self.list.Append(x['username']), lst)
+
+    @property
+    def localbox_client(self):
+        localbox_item = localbox_ctrl.ctrl.get(self.share.label)
+        return LocalBox(url=localbox_item.url, label=localbox_item.label)
+
+
 class PasshphrasePanel(wx.Panel):
     def __init__(self, parent, username, label):
         super(PasshphrasePanel, self).__init__(parent=parent)
@@ -711,6 +797,7 @@ class LoxListCtrl(wx.ListCtrl):
     """
     This class behaves like a bridge between the GUI components and the real controller.
     """
+    list = None
 
     def __init__(self, parent, ctrl):
         wx.ListCtrl.__init__(self, parent, style=wx.LC_REPORT)
@@ -737,6 +824,7 @@ class LoxListCtrl(wx.ListCtrl):
 
     def populate(self, lst=None):
         self.DeleteAllItems()
+        self.list = lst
 
     def load(self):
         return self.ctrl.load()
@@ -762,7 +850,7 @@ class SharesListCtrl(LoxListCtrl):
         self.SetColumnWidth(3, 400)
 
     def populate(self, lst=None):
-        super(SharesListCtrl, self).populate()
+        super(SharesListCtrl, self).populate(lst)
         map(lambda i: self.Append([i.label, i.user, i.path, i.url]), lst)
 
 
@@ -826,6 +914,32 @@ class NewShareDialog(wx.Dialog):
         self.ctrl = ctrl
         # Attributes
         self.panel = NewSharePanel(self)
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.InitUI()
+
+        self.Bind(wx.EVT_CLOSE, self.OnClickClose)
+
+    def InitUI(self):
+        self.main_sizer.Add(self.panel)
+
+        self.Layout()
+        self.Center()
+        self.Show()
+
+    def OnClickClose(self, wx_event):
+        self.Destroy()
+
+
+class ShareEditDialog(wx.Dialog):
+    def __init__(self, parent, share):
+        super(ShareEditDialog, self).__init__(parent=parent,
+                                              title=_('Edit Share'),
+                                              size=(500, 600),
+                                              style=wx.CLOSE_BOX | wx.CAPTION)
+
+        # Attributes
+        self.panel = ShareEditPanel(self, share=share)
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.InitUI()
