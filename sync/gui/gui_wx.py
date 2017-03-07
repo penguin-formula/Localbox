@@ -295,9 +295,10 @@ class SharePanel(LoxPanel):
         NewShareDialog(self, self.ctrl)
 
     def on_btn_del(self, wx_event):
-        question = _('This will also delete the directory in your LocalBox and for all users. Continue?')
-        if gui_utils.show_confirm_dialog(self, question):
-            self.ctrl.delete()
+        self.ctrl.delete()
+        # question = _('This will also delete the directory in your LocalBox and for all users. Continue?')
+        # if gui_utils.show_confirm_dialog(self, question):
+
 
     def on_btn_edit(self, wx_event):
         share = None
@@ -661,7 +662,7 @@ class ShareEditPanel(wx.Panel):
         self.parent.OnClickClose(event)
 
     def on_click_remove(self, wx_event):
-        user_list = self.list.CheckedStrings
+        user_list = filter(lambda x: x not in self.list.CheckedStrings, self.list.Strings)
         self.localbox_client.remove_users_from_share(self.share.id, user_list)
 
     def on_populate(self):
