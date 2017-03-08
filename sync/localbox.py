@@ -19,6 +19,7 @@ from socket import error as SocketError
 from loxcommon import os_utils
 from sync import defaults
 from sync.auth import Authenticator, AlreadyAuthenticatedError
+from sync.controllers.login_ctrl import LoginController
 from sync.gpg import gpg
 
 try:
@@ -258,6 +259,8 @@ class LocalBox(object):
 
         :return: the key for symmetric encryption in the form: (key, iv)
         """
+        if not passphrase:
+            raise InvalidPassphraseError
         pgp_client = gpg()
         keys_path = os_utils.get_keys_path(path)
         keys_path = quote_plus(keys_path)
@@ -281,7 +284,16 @@ class LocalBox(object):
         result = self._make_call(request).read()
         return loads(result)
 
-    def create_share(self, localbox_path, passphrase, user_list):
+    def get_identities(self, user_list=None):
+        """
+
+        """
+        data = dumps(user_list) if user_list is not None else None
+        request = Request(url=self.url + 'lox_api/identities', data=data)
+        result = self._make_call(request).read()
+        return loads(result)
+
+    def create_share(self, localbox_path, user_list):
         """
         Share directory with users.
 
@@ -296,20 +308,26 @@ class LocalBox(object):
 
         try:
             result = self._make_call(request).read()
-            key, iv = self.call_keys(localbox_path, passphrase)
 
-            # import public key in the user_list
-            for user in user_list:
-                public_key = user['public_key']
-                username = user['username']
-
-                gpg().add_public_key(self.label, username, public_key)
-                self.save_key(username, localbox_path, key, iv)
+            self._add_encryption_keys(localbox_path, user_list)
 
             return True
         except Exception as error:
             getLogger(__name__).exception(error)
             return False
+
+    def _add_encryption_keys(self, localbox_path, user_list):
+        if localbox_path.startswith('/'):
+            localbox_path = localbox_path[1:]
+        key, iv = self.call_keys(localbox_path, LoginController().get_passphrase(self.label))
+
+        # import public key in the user_list
+        for user in user_list:
+            public_key = user['public_key']
+            username = user['username']
+
+            gpg().add_public_key(self.label, username, public_key)
+            self.save_key(username, localbox_path, key, iv)
 
     def get_share_list(self, user):
         """
@@ -347,21 +365,20 @@ class LocalBox(object):
             getLogger(__name__).exception(error)
             return []
 
-    def remove_users_from_share(self, share_id, user_list):
+    def edit_share_users(self, share, user_list):
         """
         List users of a given share.
 
         :return: True if success, False otherwise
         """
-        request = Request(url=self.url + 'lox_api/shares/' + str(share_id) + '/edit',
+        request = Request(url=self.url + 'lox_api/shares/' + str(share.id) + '/edit',
                           data=dumps(user_list))
 
         try:
-            result = self._make_call(request).read()
-            if result != '' and result is not None:
-                return True
-            else:
-                return False
+            self._make_call(request).read()
+            user_list = self.get_identities(user_list)
+            self._add_encryption_keys(share.path, user_list)
+            return True
         except Exception as error:
             getLogger(__name__).exception(error)
             return False
@@ -516,3 +533,10 @@ class InvalidLocalBoxPathError(Exception):
 
     def __str__(self):
         return '%s is not a valid LocalBox path' % self.path
+
+
+class InvalidPassphraseError(Exception):
+    """
+    Passphrase supplied is invalid.
+    """
+    pass
