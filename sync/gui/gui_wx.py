@@ -614,7 +614,8 @@ class ShareEditPanel(wx.Panel):
         self.parent = parent
         self.share = share
 
-        self.list = wx.CheckListBox(self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize)
+        self.list = wx.CheckListBox(self, wx.ID_ANY, wx.DefaultPosition,
+                                    size=(self.GetSize()[0], 280))  # wx.DefaultSize)
         self._selected_dir = wx.TextCtrl(self, style=wx.TE_READONLY)
 
         self._btn_ok = wx.Button(self, id=wx.ID_OK, label=_('Ok'))
@@ -636,7 +637,8 @@ class ShareEditPanel(wx.Panel):
         sizer_list_actions = wx.BoxSizer(wx.HORIZONTAL)
         sizer_list_actions.Add(self._btn_remove)
         sizer_list_actions.Add(self._btn_add)
-        sizer.Add(sizer_list_actions, proportion=1, flag=wx.EXPAND | wx.ALL, border=DEFAULT_BORDER)
+        sizer.Add(sizer_list_actions, proportion=1, flag=wx.EXPAND | wx.ALL,
+                  border=DEFAULT_BORDER)
 
         btn_szr = wx.StdDialogButtonSizer()
 
