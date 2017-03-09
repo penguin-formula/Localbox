@@ -36,8 +36,7 @@ class SharesController(object):
         :return:
         """
         item = self._list[index]
-        localbox_client = LocalBox(url=item.url, label=item.label, path=item.path)
-        localbox_client.delete(item.path)
+        localbox_client = LocalBox(url=item.url, label=item.label)
         localbox_client.delete_share(item.id)
         sql = 'delete from keys where site = ? and user != ?'
         database_execute(sql, (item.label, item.user))
@@ -61,7 +60,10 @@ class SharesController(object):
                 localbox_client = LocalBox(url=item.url, label=item.label, path=item.path)
 
                 for share in localbox_client.get_share_list(user=item.user):
-                    share_item = ShareItem(user=share['user'], path='/' + share['path'], url=item.url, label=item.label,
+                    share_item = ShareItem(user=share['user'],
+                                           path='/' + share['path'],
+                                           url=item.url,
+                                           label=item.label,
                                            id=share['id'])
                     self._list.append(share_item)
             except URLError:
@@ -71,6 +73,18 @@ class SharesController(object):
 
     def get_list(self):
         return self._list
+
+    def __iter__(self):
+        return self._list.__iter__()
+
+    def __len__(self):
+        return self._list.__len__()
+
+    def __getitem__(self, index):
+        return self._list[index]
+
+    def __setitem__(self, index, value):
+        self._list[index] = value
 
 
 class ShareItem(object):

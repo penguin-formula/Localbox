@@ -121,7 +121,6 @@ def run_file_decryption(filename):
 
         getLogger(__name__).info('Finished decrypting and opening file: %s', filename)
 
-
     except Exception as ex:
         getLogger(__name__).exception(ex)
 

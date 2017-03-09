@@ -15,8 +15,10 @@ from logging import getLogger
 from os import stat, remove
 from socket import error as SocketError
 
+from loxcommon import os_utils
 from sync import defaults
 from sync.auth import Authenticator, AlreadyAuthenticatedError
+from sync.controllers.login_ctrl import LoginController
 from sync.gpg import gpg
 
 try:
@@ -60,7 +62,7 @@ class LocalBox(object):
 
         :param url:
         :param label:
-        :param path: filesystem path for the LocalBox
+        :param path: filesystem path for the LocalBox, ex: /home/john/my_localbox
         """
         if url[-1] != '/':
             url += "/"
@@ -257,8 +259,10 @@ class LocalBox(object):
 
         :return: the key for symmetric encryption in the form: (key, iv)
         """
+        if not passphrase:
+            raise InvalidPassphraseError
         pgp_client = gpg()
-        keys_path = LocalBox.get_keys_path(path)
+        keys_path = os_utils.get_keys_path(path)
         keys_path = quote_plus(keys_path)
         getLogger(__name__).debug("call lox_api/key on path %s = %s", path, keys_path)
 
@@ -272,59 +276,6 @@ class LocalBox(object):
 
         return key, iv
 
-    @staticmethod
-    def get_keys_path_v2(localbox_path):
-        """
-        Get the keys location for this localbox path.
-
-        >>> LocalBox.get_keys_path_v2('/a/b/c')
-        'a/b'
-        >>> LocalBox.get_keys_path_v2('a')
-        'a'
-        >>> LocalBox.get_keys_path_v2('/a/b/c/')
-        'a/b/c'
-        >>> LocalBox.get_keys_path_v2('a/b')
-        'a'
-
-        :param localbox_path:
-        :return: it returns the parent 'directory'
-        """
-        slash_count = localbox_path.count('/')
-        if slash_count > 1:
-            keys_path = os.path.dirname(localbox_path).lstrip('/')
-        elif slash_count == 1 and localbox_path.index('/') > 0:
-            keys_path = os.path.dirname(localbox_path).lstrip('/')
-        else:
-            keys_path = localbox_path
-
-        getLogger(__name__).debug('keys_path for localbox_path "%s" is "%s"' % (localbox_path, keys_path))
-        return keys_path
-
-    @staticmethod
-    def get_keys_path(localbox_path):
-        """
-        Get the keys location for this localbox path.
-
-        >>> LocalBox.get_keys_path('/a/b/c')
-        'a'
-        >>> LocalBox.get_keys_path('a')
-        'a'
-        >>> LocalBox.get_keys_path('/a/b/c/')
-        'a'
-        >>> LocalBox.get_keys_path('a/b')
-        'a'
-
-        :param localbox_path:
-        :return: it returns the parent 'directory'
-        """
-        if localbox_path.startswith('/'):
-            localbox_path = localbox_path[1:]
-
-        keys_path = localbox_path.split('/')[0]
-
-        getLogger(__name__).debug('keys_path for localbox_path "%s" is "%s"' % (localbox_path, keys_path))
-        return keys_path
-
     def get_all_users(self):
         """
         gets a list from the localbox server with all users.
@@ -333,7 +284,16 @@ class LocalBox(object):
         result = self._make_call(request).read()
         return loads(result)
 
-    def create_share(self, localbox_path, passphrase, user_list):
+    def get_identities(self, user_list=None):
+        """
+
+        """
+        data = dumps(user_list) if user_list is not None else None
+        request = Request(url=self.url + 'lox_api/identities', data=data)
+        result = self._make_call(request).read()
+        return loads(result)
+
+    def create_share(self, localbox_path, user_list):
         """
         Share directory with users.
 
@@ -348,34 +308,80 @@ class LocalBox(object):
 
         try:
             result = self._make_call(request).read()
-            key, iv = self.call_keys(localbox_path, passphrase)
 
-            # import public key in the user_list
-            for user in user_list:
-                public_key = user['public_key']
-                username = user['username']
-
-                gpg().add_public_key(self.label, username, public_key)
-                self.save_key(username, localbox_path, key, iv)
+            self._add_encryption_keys(localbox_path, user_list)
 
             return True
         except Exception as error:
             getLogger(__name__).exception(error)
             return False
 
+    def _add_encryption_keys(self, localbox_path, user_list):
+        if localbox_path.startswith('/'):
+            localbox_path = localbox_path[1:]
+        key, iv = self.call_keys(localbox_path, LoginController().get_passphrase(self.label))
+
+        # import public key in the user_list
+        for user in user_list:
+            public_key = user['public_key']
+            username = user['username']
+
+            gpg().add_public_key(self.label, username, public_key)
+            self.save_key(username, localbox_path, key, iv)
+
     def get_share_list(self, user):
         """
-        Share directory with users.
+        List shares of given user.
 
         :return: True if success, False otherwise
         """
         request = Request(url=self.url + 'lox_api/shares/user/' + user)
 
         try:
-            return loads(self._make_call(request).read())
+            result = self._make_call(request).read()
+            if result != '' and result is not None:
+                return loads(result)
+            else:
+                return []
         except Exception as error:
             getLogger(__name__).exception(error)
             return []
+
+    def get_share_user_list(self, share_id):
+        """
+        List users of a given share.
+
+        :return: List with the users if success, empty list otherwise
+        """
+        request = Request(url=self.url + 'lox_api/shares/' + str(share_id))
+
+        try:
+            result = self._make_call(request).read()
+            if result != '' and result is not None:
+                return loads(result)
+            else:
+                return []
+        except Exception as error:
+            getLogger(__name__).exception(error)
+            return []
+
+    def edit_share_users(self, share, user_list):
+        """
+        List users of a given share.
+
+        :return: True if success, False otherwise
+        """
+        request = Request(url=self.url + 'lox_api/shares/' + str(share.id) + '/edit',
+                          data=dumps(user_list))
+
+        try:
+            self._make_call(request).read()
+            user_list = self.get_identities(user_list)
+            self._add_encryption_keys(share.path, user_list)
+            return True
+        except Exception as error:
+            getLogger(__name__).exception(error)
+            return False
 
     def save_key(self, user, path, key, iv):
         """
@@ -388,7 +394,7 @@ class LocalBox(object):
         :param user:
         :return:
         """
-        cryptopath = LocalBox.get_keys_path(path)
+        cryptopath = os_utils.get_keys_path(path)
         cryptopath = quote_plus(cryptopath)
 
         site = self.authenticator.label
@@ -529,7 +535,8 @@ class InvalidLocalBoxPathError(Exception):
         return '%s is not a valid LocalBox path' % self.path
 
 
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()
+class InvalidPassphraseError(Exception):
+    """
+    Passphrase supplied is invalid.
+    """
+    pass

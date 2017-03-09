@@ -14,6 +14,7 @@ except ImportError:
     from io import StringIO
 
 from distutils.sysconfig import project_base
+from distutils.spawn import find_executable
 
 
 class gpg(object):
@@ -28,7 +29,9 @@ class gpg(object):
             if not isfile(binary_path):
                 binary_path = join(project_base, 'gpg')
                 if not isfile(binary_path):
-                    binary_path = None
+                    binary_path = find_executable('gpg')
+                    if not isfile(binary_path):
+                        raise RuntimeError('gpg not found')
         self.gpg = GPG(binary_path,     # gpgbinary
                        folder_path,     # gnupghome
                        verbose=False,
