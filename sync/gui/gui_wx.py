@@ -708,7 +708,8 @@ class ShareAddUserPanel(wx.Panel):
 
         # Layout
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(wx.StaticText(self, label=_('You are sharing with:')), 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
+        sizer.Add(wx.StaticText(self, label=_('Choose users to add to the share:')), 0, wx.ALL | wx.EXPAND,
+                  border=DEFAULT_BORDER)
         sizer.Add(self.list, proportion=1, flag=wx.EXPAND | wx.ALL, border=DEFAULT_BORDER)
 
         btn_szr = wx.StdDialogButtonSizer()
