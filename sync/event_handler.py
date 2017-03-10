@@ -5,6 +5,7 @@ from logging import getLogger
 from threading import Thread
 from urllib2 import URLError
 
+from os.path import isfile, isdir
 from watchdog.events import LoggingEventHandler
 from watchdog.observers import Observer
 
@@ -24,6 +25,21 @@ class LocalBoxEventHandler(LoggingEventHandler):
     def on_moved(self, event):
         super(LoggingEventHandler, self).on_moved(event)
 
+        localbox_path = get_localbox_path(self.localbox_client.path, event.src_path)
+        passphrase = LoginController().get_passphrase(self.localbox_client.label)
+
+        if isfile(event.src_path):
+            self.localbox_client.move_file(event.src_path, event.dest_path, passphrase)
+        elif isdir(event.dst_path):
+            key, iv = self.localbox_client.create_directory(localbox_path)
+
+            for root, dirs, files in os.walk(event.dst_path):
+                for name in dirs:
+                    localbox_path = get_localbox_path(self.localbox_client.path, os.path.join(root, name))
+                    self.localbox_client.create_directory(localbox_path)
+                for name in files:
+                    self.localbox_client.move_file(event.src_path, os.path.join(root, name), passphrase)
+
     def on_created(self, event):
         super(LoggingEventHandler, self).on_created(event)
 
@@ -33,6 +49,8 @@ class LocalBoxEventHandler(LoggingEventHandler):
             self.localbox_client.upload_file(fs_path=event.src_path,
                                              path=get_localbox_path(self.localbox_client.path, event.src_path),
                                              passphrase=LoginController().get_passphrase(self.localbox_client.label))
+        else:
+            getLogger(__name__).debug('%s ignored' % event.src_path)
 
 
 def _should_upload_file(path):
