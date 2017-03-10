@@ -155,20 +155,23 @@ class LocalBox(object):
 
     def create_directory(self, path):
         """
-        do the create directory call
+        Create the directory on the server.
+        This also creates stores the encryption keys, if the directory is "root parent".
+        "root parent" means that is a 1st level directory inside the user's localbox.
+
+        :param path:
+        :return: key, iv if directory is "root parent", else None
         """
+        getLogger(__name__).debug("Creating directory: %s" % path)
         metapath = urlencode({'path': path})
         request = Request(url=self.url + 'lox_api/operations/create_folder/',
                           data=metapath)
-
-        getLogger(__name__).debug("Creating directory: %s" % path)
         try:
             self._make_call(request)
             if path.count('/') == 1:
-                create_key_and_iv(self, path)
+                return self.create_key_and_iv(path)
         except HTTPError as error:
             getLogger(__name__).warning("'%s' whilst creating directory %s. %s", error, path, error.message)
-            # TODO: make directory encrypted
 
     def delete(self, path):
         """
@@ -242,6 +245,20 @@ class LocalBox(object):
 
         return None
 
+    def move_file(self, from_file, to_file, passphrase):
+        localbox_path = get_localbox_path()
+        # decrypt from_file
+        plain_contents = self.decode_file(from_file, passphrase)
+        # encrypt decrypted contents with the new location's key.
+
+        # upload new encrypted contents
+
+        # remove old encrypted file
+        remove(from_file)
+
+        # save new encrypted contents
+        pass
+
     def call_user(self, send_data=None):
         """
         do the user call
@@ -258,18 +275,18 @@ class LocalBox(object):
         except HTTPError:
             return {}
 
-    def call_keys(self, path, passphrase):
+    def call_keys(self, localbox_path, passphrase):
         """
-        do the keys call
+        Get the encrypted (key, iv) pair stored on the server.
 
         :return: the key for symmetric encryption in the form: (key, iv)
         """
         if not passphrase:
             raise InvalidPassphraseError
         pgp_client = gpg()
-        keys_path = os_utils.get_keys_path(path)
+        keys_path = os_utils.get_keys_path(localbox_path)
         keys_path = quote_plus(keys_path)
-        getLogger(__name__).debug("call lox_api/key on path %s = %s", path, keys_path)
+        getLogger(__name__).debug("call lox_api/key on localbox_path %s = %s", localbox_path, keys_path)
 
         request = Request(url=self.url + 'lox_api/key/' + keys_path)
         result = self._make_call(request)
@@ -277,7 +294,7 @@ class LocalBox(object):
         key_data = loads(result.read())
         key = pgp_client.decrypt(b64decode(key_data['key']), passphrase)
         iv = pgp_client.decrypt(b64decode(key_data['iv']), passphrase)
-        getLogger(__name__).debug("Got key %s for path %s", getChecksum(key), path)
+        getLogger(__name__).debug("Got key %s for localbox_path %s", getChecksum(key), localbox_path)
 
         return key, iv
 
@@ -402,6 +419,8 @@ class LocalBox(object):
         cryptopath = os_utils.get_keys_path(path)
         cryptopath = quote_plus(cryptopath)
 
+        getLogger(__name__).debug('saving key for %s', cryptopath)
+
         site = self.authenticator.label
 
         pgpclient = gpg()
@@ -414,7 +433,6 @@ class LocalBox(object):
         request = Request(
             url=self.url + 'lox_api/key/' + cryptopath, data=data)
         result = self._make_call(request)
-        getLogger(__name__).debug('saving key for %s', cryptopath)
         # NOTE: this is just the result of the last call, not all of them.
         # should be more robust then this
         return result
@@ -425,7 +443,7 @@ class LocalBox(object):
         """
         try:
             path = path.replace('\\', '/')
-            key = get_aes_key(self, path, passphrase)
+            key = self.get_aes_key(path, passphrase)
 
             with open(filename, 'rb') as content_file:
                 contents = content_file.read()
@@ -439,7 +457,7 @@ class LocalBox(object):
         """
         encode a file
         """
-        key = get_aes_key(self, path, passphrase, should_create=True)
+        key = self.get_aes_key(path, passphrase, should_create=True)
         result = key.encrypt(contents)
         return result
 
@@ -459,28 +477,28 @@ class LocalBox(object):
             getLogger(__name__).error('Failed to connect to server, maybe forgot https? %s', e)
             return False
 
+    def create_key_and_iv(self, path):
+        getLogger(__name__).debug('Creating a key for path: %s', path)
+        key = CryptoRandom().read(32)
+        iv = CryptoRandom().read(16)
+        self.save_key(self.username, path, key, iv)
 
-def create_key_and_iv(localbox_client, path):
-    getLogger(__name__).debug('Creating a key for path: %s', path)
-    key = CryptoRandom().read(32)
-    iv = CryptoRandom().read(16)
-    localbox_client.save_key(localbox_client.username, path, key, iv)
+        return key, iv
 
+    def get_aes_key(self, path, passphrase, should_create=False):
+        key = None
+        iv = None
+        try:
+            key, iv = self.call_keys(path, passphrase)
+        except (HTTPError, TypeError, ValueError):
+            if should_create:
+                getLogger(__name__).debug("path '%s' is without key, generating one.", path)
+                # generate keys if they don't exist
+                self.create_key_and_iv(path)
+            else:
+                raise NoKeysFoundError(message='No keys found for %s' % path)
 
-def get_aes_key(localbox_client, path, passphrase, should_create=False):
-    key = None
-    iv = None
-    try:
-        key, iv = localbox_client.call_keys(path, passphrase)
-    except (HTTPError, TypeError, ValueError):
-        if should_create:
-            getLogger(__name__).debug("path '%s' is without key, generating one.", path)
-            # generate keys if they don't exist
-            create_key_and_iv(localbox_client, path)
-        else:
-            raise NoKeysFoundError(message='No keys found for %s' % path)
-
-    return AES_Key(key, MODE_CFB, iv, segment_size=128) if key else None
+        return AES_Key(key, MODE_CFB, iv, segment_size=128) if key else None
 
 
 def get_localbox_path(localbox_location, filesystem_path):
