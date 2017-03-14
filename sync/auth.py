@@ -170,7 +170,7 @@ class Authenticator(object):
         try:
             self._call_authentication_server(authdata)
             if self.access_token is not None:
-                getLogger(__name__).debug('Authentication Succesful. Saving Client Data')
+                getLogger(__name__).debug('Authentication Successful. Saving Client Data')
                 self.save_client_data()
                 return True
         except (HTTPError, URLError) as error:
