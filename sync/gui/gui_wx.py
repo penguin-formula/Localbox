@@ -585,10 +585,15 @@ class NewSharePanel(wx.Panel):
             path = gui_utils.select_directory(cwd=self.localbox_path)
             if path:
                 path = get_localbox_path(SyncsController().get(self.selected_localbox).path, path)
-                # get meta to verify if path is a valid LocalBox path
-                # this will later problems, because for the sharing to work the files must exist in the server
-                self.localbox_client.get_meta(path)
-                self._selected_dir.SetValue(path)
+                if path.count('/') < 1:
+                    # get meta to verify if path is a valid LocalBox path
+                    # this will later problems, because for the sharing to work the files must exist in the server
+                    self.localbox_client.get_meta(path)
+                    self._selected_dir.SetValue(path)
+                else:
+                    gui_utils.show_error_dialog(_('Can only create share for root directories'), _('Error'))
+                    return
+
         except InvalidLocalBoxPathError:
             gui_utils.show_error_dialog(_(
                 'Invalid LocalBox path. Please make sure that you are selecting a directory inside LocalBox and '
@@ -1036,7 +1041,7 @@ class ShareEditDialog(wx.Dialog):
     def __init__(self, parent, share):
         super(ShareEditDialog, self).__init__(parent=parent,
                                               title=_('Edit Share'),
-                                              size=(500, 600),
+                                              size=(500, 700),
                                               style=wx.CLOSE_BOX | wx.CAPTION)
 
         # Attributes
