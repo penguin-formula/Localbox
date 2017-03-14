@@ -91,17 +91,24 @@ class Gui(wx.Frame):
 
         self.add_toolbar()
 
-        icon = wx.Icon()
-        icon.CopyFromBitmap(wx.Bitmap(gui_utils.iconpath(), wx.BITMAP_TYPE_ANY))
-        self.SetIcon(icon)
+        # icon = wx.Icon()
+        # icon.CopyFromBitmap(wx.Bitmap(gui_utils.iconpath(), wx.BITMAP_TYPE_ANY))
+        # self.SetIcon(icon)
 
     def on_close(self, event):
         self.Hide()
         event.Veto(True)
 
     def _create_toolbar_label(self, label, img):
-        return self.toolbar.AddCheckTool(wx.ID_ANY, label,
-                                         wx.Bitmap(gui_utils.images_path(img), wx.BITMAP_TYPE_ANY))
+        try:
+            return self.toolbar.AddCheckTool(wx.ID_ANY,
+                                             label,
+                                             wx.Bitmap(gui_utils.images_path(img), wx.BITMAP_TYPE_ANY))
+        except TypeError:
+            # wxPython 3.0.2
+            return self.toolbar.AddCheckLabelTool(wx.ID_ANY,
+                                                  label,
+                                                  wx.Bitmap(gui_utils.images_path(img), wx.BITMAP_TYPE_ANY))
 
     def add_toolbar(self):
         self.toolbar = self.CreateToolBar(style=wx.TB_TEXT)
@@ -556,9 +563,9 @@ class NewSharePanel(wx.Panel):
 
             if self.localbox_client.create_share(localbox_path=share_path,
                                                  user_list=user_list):
-                item = ShareItem(user=self.localbox_client.username, path=share_path, url=self.localbox_client.url,
-                                 label=lox_label)
-                SharesController().add(item)
+                ShareItem(user=self.localbox_client.username, path=share_path, url=self.localbox_client.url,
+                          label=lox_label)
+                SharesController().load()  # force load to get the ids from the server
                 self.parent.ctrl.populate(SharesController().get_list())
             else:
                 gui_utils.show_error_dialog(_('Server error creating the share'), _('Error'))

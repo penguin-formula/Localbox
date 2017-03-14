@@ -251,7 +251,12 @@ class LocalBox(object):
             request = Request(url)
         else:
             request = Request(url, data=send_data)
-        return self._make_call(request)
+        try:
+            response=self._make_call(request).read()
+            json = loads(response)
+            return json
+        except HTTPError:
+            return {}
 
     def call_keys(self, path, passphrase):
         """

@@ -200,8 +200,7 @@ class LoginWizardPage(WizardPageSimple):
         getLogger(__name__).debug('EVT_WIZARD_BEFORE_PAGE_CHANGED')
 
         if event.GetDirection():
-            response = self.parent.localbox_client.call_user()
-            result = json.loads(response.read())
+            result = self.parent.localbox_client.call_user()
 
             if 'private_key' in result and 'public_key' in result:
                 getLogger(__name__).debug("private key and public key found")
