@@ -703,7 +703,7 @@ class ShareEditPanel(wx.Panel):
     @property
     def localbox_client(self):
         localbox_item = localbox_ctrl.ctrl.get(self.share.label)
-        return LocalBox(url=localbox_item.url, label=localbox_item.label)
+        return LocalBox(url=localbox_item.url, label=localbox_item.label, path=localbox_item.path)
 
 
 class ShareAddUserPanel(wx.Panel):
@@ -768,7 +768,7 @@ class ShareAddUserPanel(wx.Panel):
     @property
     def localbox_client(self):
         localbox_item = localbox_ctrl.ctrl.get(self.share.label)
-        return LocalBox(url=localbox_item.url, label=localbox_item.label)
+        return LocalBox(url=localbox_item.url, label=localbox_item.label, path=localbox_item.path)
 
 
 class PasshphrasePanel(wx.Panel):

@@ -62,7 +62,7 @@ class LocalBox(object):
 
         :param url:
         :param label:
-        :param path: filesystem path for the LocalBox
+        :param path: filesystem path for the LocalBox, ex: /home/john/my_localbox
         """
         if url[-1] != '/':
             url += "/"
