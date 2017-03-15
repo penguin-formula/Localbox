@@ -6,7 +6,7 @@ from os.path import exists
 from sync.language import LANGUAGES
 from logging import getLogger
 
-from sync.defaults import LOCALBOX_PREFERENCES_PATH, DEFAULT_LANGUAGE
+from sync.defaults import LOCALBOX_PREFERENCES_PATH, DEFAULT_LANGUAGE, APPDIR
 
 
 class PreferencesController(object):
@@ -25,7 +25,7 @@ class PreferencesController(object):
 
     def save(self):
         getLogger(__name__).debug('Saving preferences: %s' % self._prefs)
-        if exists(LOCALBOX_PREFERENCES_PATH):
+        if exists(APPDIR):
             pickle.dump(self._prefs, open(LOCALBOX_PREFERENCES_PATH, 'wb'))
 
     def load(self):
