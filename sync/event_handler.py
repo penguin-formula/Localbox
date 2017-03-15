@@ -28,7 +28,7 @@ class LocalBoxEventHandler(LoggingEventHandler):
         localbox_path = get_localbox_path(self.localbox_client.path, event.src_path)
         passphrase = LoginController().get_passphrase(self.localbox_client.label)
 
-        if isfile(event.src_path):
+        if isfile(event.dest_path):
             self.localbox_client.move_file(event.src_path, event.dest_path, passphrase)
         elif isdir(event.dst_path):
             key, iv = self.localbox_client.create_directory(localbox_path)

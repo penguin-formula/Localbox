@@ -246,18 +246,18 @@ class LocalBox(object):
         return None
 
     def move_file(self, from_file, to_file, passphrase):
-        localbox_path = get_localbox_path()
         # decrypt from_file
-        plain_contents = self.decode_file(from_file, passphrase)
+        plain_contents = self.decode_file(get_localbox_path(self.path, from_file[:-4]), to_file, passphrase)
+        f = open(to_file[:-4], 'wb')
+        f.write(plain_contents)
+        f.close()
         # encrypt decrypted contents with the new location's key.
-
         # upload new encrypted contents
+        self.upload_file(get_localbox_path(self.path, to_file[:-4]), to_file[:-4], passphrase)
 
         # remove old encrypted file
-        remove(from_file)
+        self.delete(from_file)
 
-        # save new encrypted contents
-        pass
 
     def call_user(self, send_data=None):
         """
