@@ -9,15 +9,17 @@ from os.path import dirname, isdir, exists
 from sys import argv
 from threading import Event
 
+from watchdog.observers import Observer
+
 import sync.__version__
 from loxcommon import os_utils
 from loxcommon.log import prepare_logging
 from loxcommon.os_utils import open_file_ext
 from sync import defaults
-from sync import event_handler
 from sync.controllers import openfiles_ctrl
-from sync.controllers.localbox_ctrl import ctrl as sync_ctrl
+from sync.controllers.localbox_ctrl import ctrl as sync_ctrl, SyncsController
 from sync.controllers.login_ctrl import LoginController
+from sync.event_handler import LocalBoxEventHandler
 from sync.gui import gui_utils
 from sync.gui import gui_wx
 from sync.gui.taskbar import taskbarmain
@@ -39,7 +41,7 @@ except ImportError:
     raw_input = input  # pylint: disable=W0622,C0103
 
 
-def run_sync_daemon():
+def run_sync_daemon(observers=None):
     try:
         EVENT = Event()
         EVENT.clear()
@@ -47,17 +49,31 @@ def run_sync_daemon():
         MAIN = MainSyncer(EVENT)
         MAIN.start()
 
-        taskbarmain(MAIN)
+        taskbarmain(MAIN, observers)
     except Exception as error:  # pylint: disable=W0703
         getLogger(__name__).exception(error)
 
 
 def run_event_daemon():
-    try:
-        for runner in event_handler.get_event_runners():
-            runner.start()
-    except Exception as error:  # pylint: disable=W0703
-        getLogger(__name__).exception(error)
+    for sync_item in SyncsController():
+        try:
+            url = sync_item.url
+            label = sync_item.label
+            localbox_client = LocalBox(url, label, sync_item.path)
+
+            event_handler = LocalBoxEventHandler(localbox_client)
+            observer = Observer()
+            observer.setName('th-evt-%s' % sync_item.label)
+            observer.schedule(event_handler, localbox_client.path, recursive=True)
+            observer.start()
+        except NoOptionError as error:
+            getLogger(__name__).exception(error)
+            string = "Skipping '%s' due to missing option '%s'" % (sync_item, error.option)
+            getLogger(__name__).info(string)
+        except URLError as error:
+            getLogger(__name__).exception(error)
+            string = "Skipping '%s' because it cannot be reached" % (sync_item)
+            getLogger(__name__).info(string)
 
 
 def run_file_decryption(filename):

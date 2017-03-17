@@ -3,17 +3,18 @@ localbox client library
 """
 
 import errno
-import os
 import hashlib
-from Crypto.Cipher.AES import MODE_CFB
-from Crypto.Cipher.AES import new as AES_Key
-from Crypto.Random import new as CryptoRandom
+import re
 from _ssl import PROTOCOL_TLSv1_2
 from base64 import b64decode
 from base64 import b64encode
 from logging import getLogger
 from os import stat, remove
 from socket import error as SocketError
+
+from Crypto.Cipher.AES import MODE_CFB
+from Crypto.Cipher.AES import new as AES_Key
+from Crypto.Random import new as CryptoRandom
 
 from loxcommon import os_utils
 from sync import defaults
@@ -173,17 +174,17 @@ class LocalBox(object):
         except HTTPError as error:
             getLogger(__name__).warning("'%s' whilst creating directory %s. %s", error, path, error.message)
 
-    def delete(self, path):
+    def delete(self, localbox_path):
         """
         do the delete call
         """
-        metapath = urlencode({'path': path})
+        metapath = urlencode({'path': localbox_path})
         request = Request(url=self.url + 'lox_api/operations/delete/',
                           data=metapath)
         try:
             return self._make_call(request)
         except HTTPError:
-            getLogger(__name__).error("Error remote deleting '%s'", path)
+            getLogger(__name__).error("Error remote deleting '%s'", localbox_path)
 
     def delete_share(self, share_id):
         """
@@ -258,7 +259,6 @@ class LocalBox(object):
         # remove old encrypted file
         self.delete(from_file)
 
-
     def call_user(self, send_data=None):
         """
         do the user call
@@ -269,7 +269,7 @@ class LocalBox(object):
         else:
             request = Request(url, data=send_data)
         try:
-            response=self._make_call(request).read()
+            response = self._make_call(request).read()
             json = loads(response)
             return json
         except HTTPError:
@@ -514,7 +514,8 @@ def get_localbox_path(localbox_location, filesystem_path):
     :param filesystem_path:
     :return:
     """
-    return filesystem_path.replace(localbox_location, '', 1).replace('\\', '/')
+    return re.sub(defaults.LOCALBOX_EXTENSION + '$', '',
+                  filesystem_path.replace(localbox_location, '', 1).replace('\\', '/'))
 
 
 def remove_decrypted_files():
