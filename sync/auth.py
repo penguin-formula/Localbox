@@ -8,6 +8,7 @@ from time import time
 from .database import database_execute
 from logging import getLogger
 from ssl import SSLContext  # pylint: disable=E0611
+
 try:
     from httplib import BadStatusLine
 except:
@@ -58,18 +59,29 @@ class Authenticator(object):
     class implementing the authentication code
     """
 
-    def __init__(self, authentication_url, label):
-        self.authentication_url = authentication_url
-        self.label = label
-        self.client_id = None
-        self.client_secret = None
-        self.access_token = None
-        self.expires = 0
-        self.scope = None
-        self.username = None
+    def __new__(cls, authentication_url, label):
+        if not hasattr(cls, 'instance'):
+            cls.instance = dict()
 
-        self.refresh_token = None
-        self.load_client_data()
+        if label not in cls.instance.keys():
+            cls.instance[label] = super(Authenticator, cls).__new__(cls, authentication_url, label)
+
+        return cls.instance[label]
+
+    def __init__(self, authentication_url, label):
+        if not hasattr(self, 'label'):
+            getLogger(__name__).debug('New authenticator for %s' % label)
+            self.authentication_url = authentication_url
+            self.label = label
+            self.client_id = None
+            self.client_secret = None
+            self.access_token = None
+            self.expires = 0
+            self.scope = None
+            self.username = None
+
+            self.refresh_token = None
+            self.load_client_data()
 
     def save_client_data(self):
         """
@@ -175,7 +187,7 @@ class Authenticator(object):
                 return True
         except (HTTPError, URLError) as error:
             getLogger(__name__).exception(error)
-            if hasattr(error, 'code') and error.code != 401:   # HTTP Error 401: Unauthorized
+            if hasattr(error, 'code') and error.code != 401:  # HTTP Error 401: Unauthorized
                 raise error
         # clear credentials on failure
         self.client_id = None
@@ -231,8 +243,9 @@ class Authenticator(object):
         if self.access_token is None and self.client_id is None and self.client_secret is None:
             raise AuthenticationError('Please authenticate with resource owner credentials first')
         if time() > self.expires:
-            getLogger(__name__).debug("Token expired. Reauthenticating")
+            getLogger(__name__).debug("Token %s expired. Reauthenticating" % self.access_token)
             self.authenticate_with_client_secret()
+            getLogger(__name__).debug("New token %s." % self.access_token)
         return 'Bearer ' + self.access_token
 
 
