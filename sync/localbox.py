@@ -118,8 +118,9 @@ class LocalBox(object):
         """
         do the actual call to the server with authentication data
         """
-        request.add_header('Authorization',
-                           self.authenticator.get_authorization_header())
+        auth_header = self.authenticator.get_authorization_header()
+        getLogger(__name__).debug('_make_call auth header: %s' % auth_header)
+        request.add_header('Authorization', auth_header)
         non_verifying_context = SSLContext(PROTOCOL_TLSv1_2)
         return urlopen(request, context=non_verifying_context)
 
@@ -457,7 +458,7 @@ class LocalBox(object):
         """
         encode a file
         """
-        key = self.get_aes_key(path, passphrase, should_create=True)
+        key = self.get_aes_key(path, passphrase)
         result = key.encrypt(contents)
         return result
 
@@ -485,18 +486,11 @@ class LocalBox(object):
 
         return key, iv
 
-    def get_aes_key(self, path, passphrase, should_create=False):
-        key = None
-        iv = None
+    def get_aes_key(self, path, passphrase):
         try:
             key, iv = self.call_keys(path, passphrase)
         except (HTTPError, TypeError, ValueError):
-            if should_create:
-                getLogger(__name__).debug("path '%s' is without key, generating one.", path)
-                # generate keys if they don't exist
-                self.create_key_and_iv(path)
-            else:
-                raise NoKeysFoundError(message='No keys found for %s' % path)
+            raise NoKeysFoundError(message='No keys found for %s' % path)
 
         return AES_Key(key, MODE_CFB, iv, segment_size=128) if key else None
 
