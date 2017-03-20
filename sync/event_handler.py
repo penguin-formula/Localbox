@@ -5,6 +5,7 @@ from os.path import isfile, isdir, exists
 from watchdog.events import LoggingEventHandler
 
 import sync.defaults as defaults
+from loxcommon import os_utils
 from sync.controllers import openfiles_ctrl
 from sync.controllers.login_ctrl import LoginController
 from sync.localbox import get_localbox_path
@@ -37,8 +38,8 @@ class LocalBoxEventHandler(LoggingEventHandler):
                     for name in files:
                         self.localbox_client.move_file(event.src_path, os.path.join(root, name), passphrase)
 
-        except:
-            getLogger(__name__).exception()
+        except Exception as ex:
+            getLogger(__name__).exception(ex)
 
     def on_created(self, event):
         super(LoggingEventHandler, self).on_created(event)
@@ -58,9 +59,11 @@ class LocalBoxEventHandler(LoggingEventHandler):
         try:
             if _should_delete_file(event.src_path):
                 self.localbox_client.delete(get_localbox_path(self.localbox_client.path, event.src_path))
-        except:
+                openfiles_ctrl.remove(
+                    filesystem_path=os_utils.remove_extension(event.src_path, defaults.LOCALBOX_EXTENSION))
+        except Exception as ex:
             # catch any exception and log it. Then continue listening to the events
-            getLogger(__name__).exception()
+            getLogger(__name__).exception(ex)
 
 
 def _should_upload_file(path):
@@ -69,4 +72,4 @@ def _should_upload_file(path):
 
 
 def _should_delete_file(path):
-    return path.endswith(defaults.LOCALBOX_EXTENSION)
+    return path.endswith(defaults.LOCALBOX_EXTENSION) or isdir(path)
