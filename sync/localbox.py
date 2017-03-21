@@ -114,15 +114,28 @@ class LocalBox(object):
                         bearer = True
         raise AlreadyAuthenticatedError()
 
-    def _make_call(self, request):
+    def _make_call(self, request, retry_count=1):
         """
-        do the actual call to the server with authentication data
+        Do the actual call to the server with authentication data.
+
+        :param request:
+        :param retry_count: counts the amount of retries.
+        :return:
         """
         auth_header = self.authenticator.get_authorization_header()
         getLogger(__name__).debug('_make_call auth header: %s' % auth_header)
         request.add_header('Authorization', auth_header)
         non_verifying_context = SSLContext(PROTOCOL_TLSv1_2)
-        return urlopen(request, context=non_verifying_context)
+
+        try:
+            return urlopen(request, context=non_verifying_context)
+        except HTTPError as error:
+            if hasattr(error, 'code'):
+                if error.code == 401:
+                    if retry_count <= defaults.MAX_AUTH_RETRIES:
+                        self.authenticator.authenticate_with_client_secret()
+                        return self._make_call(request, retry_count + 1)
+            raise error
 
     def get_meta(self, path=''):
         """
@@ -250,15 +263,18 @@ class LocalBox(object):
     def move_file(self, from_file, to_file, passphrase):
         # decrypt from_file
         plain_contents = self.decode_file(get_localbox_path(self.path, from_file[:-4]), to_file, passphrase)
-        f = open(to_file[:-4], 'wb')
-        f.write(plain_contents)
-        f.close()
-        # encrypt decrypted contents with the new location's key.
-        # upload new encrypted contents
-        self.upload_file(get_localbox_path(self.path, to_file[:-4]), to_file[:-4], passphrase)
+        if plain_contents:
+            f = open(to_file[:-4], 'wb')
+            f.write(plain_contents)
+            f.close()
+            # encrypt decrypted contents with the new location's key.
+            # upload new encrypted contents
+            self.upload_file(get_localbox_path(self.path, to_file[:-4]), to_file[:-4], passphrase)
 
-        # remove old encrypted file
-        self.delete(from_file)
+            # remove old encrypted file
+            self.delete(from_file)
+        else:
+            getLogger(__name__).error("move %s failed. Contents weren't decoded successfully." % from_file)
 
     def call_user(self, send_data=None):
         """
