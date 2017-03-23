@@ -89,7 +89,7 @@ class Authenticator(object):
         the database
         """
         sql = "insert into sites (site, user, client_id, client_secret, token) " \
-              "values (?, ?, ?, ?, ?, ?);"
+              "values (?, ?, ?, ?, ?);"
         database_execute(
             sql, (self.label, self.username, self.client_id, self.client_secret, self.access_token))
 

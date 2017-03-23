@@ -244,7 +244,7 @@ class LocalBox(object):
             openfile.close()
 
             # remove plain file
-            remove(fs_path)
+            os_utils.shred(fs_path)
 
             # upload encrypted file
             getLogger(__name__).info("Uploading %s: Statsize: %d, readsize: %d cryptosize: %d",
@@ -272,7 +272,7 @@ class LocalBox(object):
             self.upload_file(get_localbox_path(self.path, to_file[:-4]), to_file[:-4], passphrase)
 
             # remove old encrypted file
-            self.delete(from_file)
+            self.delete(from_file[:-4])
         else:
             getLogger(__name__).error("move %s failed. Contents weren't decoded successfully." % from_file)
 

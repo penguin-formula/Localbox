@@ -20,8 +20,6 @@ class LocalBoxEventHandler(LoggingEventHandler):
     def on_moved(self, event):
         super(LoggingEventHandler, self).on_moved(event)
 
-        pass
-
         try:
             localbox_path = get_localbox_path(self.localbox_client.path, event.src_path)
             passphrase = LoginController().get_passphrase(self.localbox_client.label)
@@ -65,10 +63,18 @@ class LocalBoxEventHandler(LoggingEventHandler):
             # catch any exception and log it. Then continue listening to the events
             getLogger(__name__).exception(ex)
 
+    def on_modified(self, event):
+        super(LocalBoxEventHandler, self).on_modified(event)
+
+        if _should_upload_file(event.src_path):
+            self.localbox_client.upload_file(fs_path=event.src_path,
+                                             path=get_localbox_path(self.localbox_client.path, event.src_path),
+                                             passphrase=LoginController().get_passphrase(self.localbox_client.label))
+
 
 def _should_upload_file(path):
     return exists(path) and not path.endswith(defaults.LOCALBOX_EXTENSION) and os.path.getsize(
-        path) > 0 and path not in openfiles_ctrl.load()
+        path) > 0 and path not in openfiles_ctrl.load() and isfile(path)
 
 
 def _should_delete_file(path):
