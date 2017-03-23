@@ -9,7 +9,7 @@ from _ssl import PROTOCOL_TLSv1_2
 from base64 import b64decode
 from base64 import b64encode
 from logging import getLogger
-from os import stat, remove
+from os import stat
 from socket import error as SocketError
 
 from Crypto.Cipher.AES import MODE_CFB
@@ -123,6 +123,8 @@ class LocalBox(object):
         :return:
         """
         auth_header = self.authenticator.get_authorization_header()
+        getLogger(__name__).debug('_make_call: %s' % request.get_full_url())
+        getLogger(__name__).debug('_make_call data: %s' % request.get_data())
         getLogger(__name__).debug('_make_call auth header: %s' % auth_header)
         request.add_header('Authorization', auth_header)
         non_verifying_context = SSLContext(PROTOCOL_TLSv1_2)
@@ -183,8 +185,7 @@ class LocalBox(object):
                           data=metapath)
         try:
             self._make_call(request)
-            if path.count('/') == 1:
-                return self.create_key_and_iv(path)
+            return self.create_key_and_iv(path) if path.count('/') else None, None
         except HTTPError as error:
             getLogger(__name__).warning("'%s' whilst creating directory %s. %s", error, path, error.message)
 
@@ -213,13 +214,14 @@ class LocalBox(object):
         except HTTPError:
             getLogger(__name__).error("Error remote deleting share '%d'", share_id)
 
-    def upload_file(self, path, fs_path, passphrase):
+    def upload_file(self, path, fs_path, passphrase, remove=True):
         """
         upload a file to localbox
 
         :param path: path relative to localbox location. eg: /some_folder/image.jpg
         :param fs_path: file system path. eg: /home/user/localbox/some_folder/image.jpg
         :param passphrase: used to encrypt file
+        :param remove: whether or not to remove the plain text file
         :return:
         """
         metapath = quote_plus(path)
@@ -244,7 +246,8 @@ class LocalBox(object):
             openfile.close()
 
             # remove plain file
-            os_utils.shred(fs_path)
+            if remove:
+                os_utils.shred(fs_path)
 
             # upload encrypted file
             getLogger(__name__).info("Uploading %s: Statsize: %d, readsize: %d cryptosize: %d",
@@ -260,21 +263,45 @@ class LocalBox(object):
 
         return None
 
-    def move_file(self, from_file, to_file, passphrase):
-        # decrypt from_file
-        plain_contents = self.decode_file(get_localbox_path(self.path, from_file[:-4]), to_file, passphrase)
-        if plain_contents:
-            f = open(to_file[:-4], 'wb')
-            f.write(plain_contents)
-            f.close()
-            # encrypt decrypted contents with the new location's key.
-            # upload new encrypted contents
-            self.upload_file(get_localbox_path(self.path, to_file[:-4]), to_file[:-4], passphrase)
+    def _call_move(self, from_path, to_path):
+        """
+        Call the backend service to move files within the same "root" directory.
 
-            # remove old encrypted file
-            self.delete(from_file[:-4])
+        :param from_path:
+        :param to_path:
+        :return:
+        """
+        request = Request(url=self.url + 'lox_api/operations/move',
+                          data=dumps({
+                              'from_path': from_path,
+                              'to_path': to_path
+                          }))
+        try:
+            return self._make_call(request)
+        except HTTPError:
+            getLogger(__name__).error("Error remote moving file '%s' to'%s'", from_path, to_path)
+
+    def move_file(self, from_file, to_file, passphrase):
+        localbox_path_from_file = get_localbox_path(self.path, from_file[:-4])
+        localbox_path_to_file = get_localbox_path(self.path, to_file[:-4])
+
+        if os_utils.get_keys_path(localbox_path_from_file) == os_utils.get_keys_path(localbox_path_to_file):
+            self._call_move(localbox_path_from_file, localbox_path_to_file)
         else:
-            getLogger(__name__).error("move %s failed. Contents weren't decoded successfully." % from_file)
+            # decrypt from_file
+            plain_contents = self.decode_file(localbox_path_from_file, to_file, passphrase)
+            if plain_contents:
+                f = open(to_file[:-4], 'wb')
+                f.write(plain_contents)
+                f.close()
+                # encrypt decrypted contents with the new location's key.
+                # upload new encrypted contents
+                self.upload_file(localbox_path_to_file, to_file[:-4], passphrase)
+
+                # remove old encrypted file
+                self.delete(localbox_path_from_file)
+            else:
+                getLogger(__name__).error("move %s failed. Contents weren't decoded successfully." % from_file)
 
     def call_user(self, send_data=None):
         """
@@ -508,6 +535,7 @@ class LocalBox(object):
         except (HTTPError, TypeError, ValueError):
             raise NoKeysFoundError(message='No keys found for %s' % path)
 
+        # TODO: use timed cache (see cachetools.TTLCache: https://pythonhosted.org/cachetools/)
         return AES_Key(key, MODE_CFB, iv, segment_size=128) if key else None
 
 
