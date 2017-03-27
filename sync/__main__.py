@@ -121,6 +121,7 @@ def run_file_decryption(filename):
 
         # write file
         tmp_decoded_filename = os_utils.remove_extension(filename, defaults.LOCALBOX_EXTENSION)
+        openfiles_ctrl.add(tmp_decoded_filename)
         getLogger(__name__).info('tmp_decoded_filename: %s' % tmp_decoded_filename)
 
         if os.path.exists(tmp_decoded_filename):
@@ -132,8 +133,6 @@ def run_file_decryption(filename):
 
         # open file
         open_file_ext(tmp_decoded_filename)
-
-        openfiles_ctrl.add(tmp_decoded_filename)
 
         getLogger(__name__).info('Finished decrypting and opening file: %s', filename)
 

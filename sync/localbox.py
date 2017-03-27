@@ -246,6 +246,7 @@ class LocalBox(object):
 
             # remove plain file
             if remove:
+                getLogger(__name__).debug('Deleting old plain file: %s' % fs_path)
                 os_utils.shred(fs_path)
 
             # upload encrypted file

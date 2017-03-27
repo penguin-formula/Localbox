@@ -37,7 +37,7 @@ class LocalBoxEventHandler(LoggingEventHandler):
         :param event:
         :return:
         """
-        super(LoggingEventHandler, self).on_moved(event)
+        super(LocalBoxEventHandler, self).on_moved(event)
 
         passphrase = LoginController().get_passphrase(self.localbox_client.label)
 
@@ -60,7 +60,7 @@ class LocalBoxEventHandler(LoggingEventHandler):
 
     @log_exception
     def on_created(self, event):
-        super(LoggingEventHandler, self).on_created(event)
+        super(LocalBoxEventHandler, self).on_created(event)
 
         if event.is_directory:
             self.localbox_client.create_directory(get_localbox_path(self.localbox_client.path, event.src_path))

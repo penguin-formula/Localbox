@@ -36,11 +36,8 @@ def load():
     try:
         with open(LOCALBOX_OPENFILES, 'rb') as f:
             old_openfiles_list = pickle.load(f)
-            openfiles_list = list()
             getLogger(__name__).debug('found this opened files: %s' % old_openfiles_list)
-            for opened_file in old_openfiles_list:
-                if exists(opened_file):
-                    openfiles_list.append(opened_file)
+            openfiles_list = filter(lambda x: exists(x), old_openfiles_list)
     except IOError:
         openfiles_list = list()
 
