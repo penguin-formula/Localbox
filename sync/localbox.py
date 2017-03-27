@@ -124,7 +124,6 @@ class LocalBox(object):
         """
         auth_header = self.authenticator.get_authorization_header()
         getLogger(__name__).debug('_make_call: %s' % request.get_full_url())
-        getLogger(__name__).debug('_make_call data: %s' % request.get_data())
         getLogger(__name__).debug('_make_call auth header: %s' % auth_header)
         request.add_header('Authorization', auth_header)
         non_verifying_context = SSLContext(PROTOCOL_TLSv1_2)
