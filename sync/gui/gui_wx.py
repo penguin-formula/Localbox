@@ -585,7 +585,7 @@ class NewSharePanel(wx.Panel):
             path = gui_utils.select_directory(cwd=self.localbox_path)
             if path:
                 path = get_localbox_path(SyncsController().get(self.selected_localbox).path, path)
-                if path.count('/') < 1:
+                if path.count('/') < 2:
                     # get meta to verify if path is a valid LocalBox path
                     # this will later problems, because for the sharing to work the files must exist in the server
                     self.localbox_client.get_meta(path)
