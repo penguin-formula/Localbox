@@ -19,6 +19,7 @@ from sync import defaults
 from sync.controllers import openfiles_ctrl
 from sync.controllers.localbox_ctrl import ctrl as sync_ctrl, SyncsController
 from sync.controllers.login_ctrl import LoginController
+from sync.database import database_execute, DatabaseError
 from sync.event_handler import LocalBoxEventHandler
 from sync.gui import gui_utils
 from sync.gui import gui_wx
@@ -167,6 +168,14 @@ if __name__ == '__main__':
         signal.signal(signal.CTRL_C_EVENT, remove_decrypted_files)
     except:
         pass
+
+    try:
+        sql = 'SELECT token FROM sites'
+        database_execute(sql)
+    except DatabaseError:
+        sql = 'ALTER TABLE sites ADD COLUMN TOKEN CHAR(255)'
+        database_execute(sql)
+        getLogger(__name__).debug('TOKEN column added to table SITES')
 
     if len(argv) > 1:
         filename = argv[1]
