@@ -56,7 +56,9 @@ class LocalBoxEventHandler(LoggingEventHandler):
         elif event.src_path.endswith(defaults.LOCALBOX_EXTENSION):
             self.localbox_client.move_file(event.src_path, event.dest_path, passphrase)
         else:
-            getLogger(__name__).debug('on_moved ignored: %s' % event.src_path)
+            self.localbox_client.upload_file(fs_path=event.dest_path,
+                                             path=get_localbox_path(self.localbox_client.path, event.dest_path),
+                                             passphrase=LoginController().get_passphrase(self.localbox_client.label))
 
     @log_exception
     def on_created(self, event):
