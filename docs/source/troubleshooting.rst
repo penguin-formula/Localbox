@@ -24,3 +24,19 @@ Just after installing ``rng-tools`` the application will unlock. If it locks aga
 Note: This only happened on a Linux Virtual Machine.
 
 References: https://delightlylinux.wordpress.com/2015/07/01/is-gpg-hanging-when-generating-a-key/
+
+
+No systray icon on Ubuntu
+=========================
+
+Problem: You're running LocalBox sync client on Ubuntu (Unity Desktop Environment), it seems to be running fine
+but you cannot see it on the system tray.
+
+Solution: Ubuntu does not have a conventional system tray. You can add this functionality by installing
+Indicator Systemtray Unity:
+
+.. code:: bash
+
+    sudo apt-add-repository ppa:fixnix/indicator-systemtray-unity -y && sudo apt-get update && sudo apt-get install indicator-systemtray-unity -y
+
+.. image:: ../_static/troubleshooting_ubuntu_systray.jpg
