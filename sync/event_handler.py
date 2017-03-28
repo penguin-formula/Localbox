@@ -1,14 +1,17 @@
 import os
+from ConfigParser import NoOptionError
 from logging import getLogger
-from os.path import isfile, isdir, exists
+from os.path import isfile, exists
+from urllib2 import URLError
 
 from watchdog.events import LoggingEventHandler
+from watchdog.observers import Observer
 
 import sync.defaults as defaults
 from loxcommon import os_utils
 from sync.controllers import openfiles_ctrl
 from sync.controllers.login_ctrl import LoginController
-from sync.localbox import get_localbox_path
+from sync.localbox import get_localbox_path, LocalBox
 
 
 def log_exception(f):
@@ -109,3 +112,25 @@ def _should_modify_file(path):
 
 def _should_delete_file(event):
     return event.src_path.endswith(defaults.LOCALBOX_EXTENSION) or event.is_directory
+
+
+def create_watchdog(sync_item):
+    try:
+        url = sync_item.url
+        label = sync_item.label
+        localbox_client = LocalBox(url, label, sync_item.path)
+
+        event_handler = LocalBoxEventHandler(localbox_client)
+        observer = Observer()
+        observer.setName('th-evt-%s' % sync_item.label)
+        observer.schedule(event_handler, localbox_client.path, recursive=True)
+        observer.start()
+        getLogger(__name__).info('started watchdog for %s' % sync_item.path)
+    except NoOptionError as error:
+        getLogger(__name__).exception(error)
+        string = "Skipping '%s' due to missing option '%s'" % (sync_item, error.option)
+        getLogger(__name__).info(string)
+    except URLError as error:
+        getLogger(__name__).exception(error)
+        string = "Skipping '%s' because it cannot be reached" % sync_item
+        getLogger(__name__).info(string)

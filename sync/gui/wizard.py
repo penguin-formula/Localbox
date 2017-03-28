@@ -3,6 +3,8 @@ import errno
 import os
 import wx
 
+from sync.event_handler import create_watchdog
+
 try:
     from wx.wizard import (Wizard, WizardPageSimple, EVT_WIZARD_BEFORE_PAGE_CHANGED, EVT_WIZARD_PAGE_CHANGING,
                            EVT_WIZARD_PAGE_CHANGED)
@@ -311,7 +313,8 @@ class PassphraseWizardPage(WizardPageSimple):
                         event.Veto()
                         return
 
-                    self._add_new_sync_item()
+                    sync_item = self._add_new_sync_item()
+                    create_watchdog(sync_item)
                 else:
                     event.Veto()
         except Exception as err:
@@ -327,3 +330,4 @@ class PassphraseWizardPage(WizardPageSimple):
         self.parent.ctrl.save()
         self.parent.event.set()
         getLogger(__name__).debug("new sync saved")
+        return item

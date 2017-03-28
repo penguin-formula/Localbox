@@ -9,8 +9,6 @@ from os.path import dirname, isdir, exists
 from sys import argv
 from threading import Event
 
-from watchdog.observers import Observer
-
 import sync.__version__
 from loxcommon import os_utils
 from loxcommon.log import prepare_logging
@@ -20,7 +18,7 @@ from sync.controllers import openfiles_ctrl
 from sync.controllers.localbox_ctrl import ctrl as sync_ctrl, SyncsController
 from sync.controllers.login_ctrl import LoginController
 from sync.database import database_execute, DatabaseError
-from sync.event_handler import LocalBoxEventHandler
+from sync.event_handler import create_watchdog
 from sync.gui import gui_utils
 from sync.gui import gui_wx
 from sync.gui.taskbar import taskbarmain
@@ -57,24 +55,7 @@ def run_sync_daemon(observers=None):
 
 def run_event_daemon():
     for sync_item in SyncsController():
-        try:
-            url = sync_item.url
-            label = sync_item.label
-            localbox_client = LocalBox(url, label, sync_item.path)
-
-            event_handler = LocalBoxEventHandler(localbox_client)
-            observer = Observer()
-            observer.setName('th-evt-%s' % sync_item.label)
-            observer.schedule(event_handler, localbox_client.path, recursive=True)
-            observer.start()
-        except NoOptionError as error:
-            getLogger(__name__).exception(error)
-            string = "Skipping '%s' due to missing option '%s'" % (sync_item, error.option)
-            getLogger(__name__).info(string)
-        except URLError as error:
-            getLogger(__name__).exception(error)
-            string = "Skipping '%s' because it cannot be reached" % (sync_item)
-            getLogger(__name__).info(string)
+        create_watchdog(sync_item)
 
 
 def run_file_decryption(filename):
