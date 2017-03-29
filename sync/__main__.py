@@ -22,9 +22,10 @@ from sync.event_handler import create_watchdog
 from sync.gui import gui_utils
 from sync.gui import gui_wx
 from sync.gui.taskbar import taskbarmain
-from sync.localbox import LocalBox, remove_decrypted_files
+from sync.localbox import LocalBox
 from sync.syncer import MainSyncer
 from .defaults import LOG_PATH, APPDIR, SYNCINI_PATH
+from .controllers import openfiles_ctrl as openfiles_ctrl
 
 try:
     from ConfigParser import ConfigParser, SafeConfigParser
@@ -103,7 +104,6 @@ def run_file_decryption(filename):
 
         # write file
         tmp_decoded_filename = os_utils.remove_extension(filename, defaults.LOCALBOX_EXTENSION)
-        openfiles_ctrl.add(tmp_decoded_filename)
         getLogger(__name__).info('tmp_decoded_filename: %s' % tmp_decoded_filename)
 
         if os.path.exists(tmp_decoded_filename):
@@ -112,6 +112,7 @@ def run_file_decryption(filename):
         localfile = open(tmp_decoded_filename, 'wb')
         localfile.write(decoded_contents)
         localfile.close()
+        openfiles_ctrl.add(tmp_decoded_filename)
 
         # open file
         open_file_ext(tmp_decoded_filename)
@@ -142,11 +143,11 @@ if __name__ == '__main__':
     prepare_logging(configparser, log_path=LOG_PATH)
     getLogger('gnupg').setLevel(ERROR)
 
-    signal.signal(signal.SIGINT, remove_decrypted_files)
-    signal.signal(signal.SIGTERM, remove_decrypted_files)
+    signal.signal(signal.SIGINT, openfiles_ctrl.remove_all)
+    signal.signal(signal.SIGTERM, openfiles_ctrl.remove_all)
     try:
         # only on Windows
-        signal.signal(signal.CTRL_C_EVENT, remove_decrypted_files)
+        signal.signal(signal.CTRL_C_EVENT, openfiles_ctrl.remove_all())
     except:
         pass
 

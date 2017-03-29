@@ -16,7 +16,7 @@ from sync.controllers.login_ctrl import LoginController
 from sync.defaults import LOCALBOX_SITES_PATH
 from sync.gui.gui_wx import Gui, LocalBoxApp
 from sync.__version__ import VERSION_STRING
-from sync.localbox import remove_decrypted_files
+
 import sync.controllers.openfiles_ctrl as openfiles_ctrl
 
 try:
@@ -94,7 +94,7 @@ class LocalBoxIcon(TaskBarIcon):
         self._main_syncing_thread.stop()
 
     def delete_decrypted(self, event=None):
-        remove_decrypted_files()
+        openfiles_ctrl.remove_all()
 
     def create_popup_menu(self):
         """

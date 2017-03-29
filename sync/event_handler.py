@@ -107,7 +107,7 @@ def _should_upload_file(path):
 
 def _should_modify_file(path):
     return exists(path) and not path.endswith(defaults.LOCALBOX_EXTENSION) and isfile(path) and os.path.getsize(
-        path) > 0
+        path) > 0 and os_utils.hash_file(path) != openfiles_ctrl.load()[path]
 
 
 def _should_delete_file(event):

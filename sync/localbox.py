@@ -8,9 +8,12 @@ import re
 from _ssl import PROTOCOL_TLSv1_2
 from base64 import b64decode
 from base64 import b64encode
+from json import dumps
+from json import loads
 from logging import getLogger
 from os import stat
 from socket import error as SocketError
+from ssl import SSLContext  # pylint: disable=E0611
 
 from Crypto.Cipher.AES import MODE_CFB
 from Crypto.Cipher.AES import new as AES_Key
@@ -38,10 +41,6 @@ except ImportError:
     from urllib.request import Request  # pylint: disable=F0401,E0611
     from http.client import BadStatusLine  # pylint: disable=F0401,E0611
     from configparser import ConfigParser  # pylint: disable=F0401,E0611
-
-from json import loads
-from json import dumps
-from ssl import SSLContext  # pylint: disable=E0611
 
 
 def getChecksum(key):
@@ -554,19 +553,6 @@ def get_localbox_path(localbox_location, filesystem_path):
     """
     return re.sub(defaults.LOCALBOX_EXTENSION + '$', '',
                   filesystem_path.replace(localbox_location, '', 1).replace('\\', '/'))
-
-
-def remove_decrypted_files():
-    import os, sync.controllers.openfiles_ctrl as ctrl
-
-    getLogger(__name__).info('removing decrypted files')
-    for filename in ctrl.load():
-        try:
-            os.remove(filename)
-        except Exception as ex:
-            getLogger(__name__).error('could not remove file %s, %s' % (filename, ex))
-
-    ctrl.save([])
 
 
 class InvalidLocalboxURLError(Exception):
