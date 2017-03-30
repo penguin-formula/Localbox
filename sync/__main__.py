@@ -147,7 +147,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGTERM, openfiles_ctrl.remove_all)
     try:
         # only on Windows
-        signal.signal(signal.CTRL_C_EVENT, openfiles_ctrl.remove_all())
+        signal.signal(signal.CTRL_C_EVENT, openfiles_ctrl.remove_all)
     except:
         pass
 

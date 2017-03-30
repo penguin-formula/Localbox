@@ -80,7 +80,7 @@ class LocalBoxEventHandler(LoggingEventHandler):
     def on_deleted(self, event):
         super(LocalBoxEventHandler, self).on_deleted(event)
 
-        if _should_delete_file(event):
+        if _should_delete_file(event, self.localbox_client):
             self.localbox_client.delete(get_localbox_path(self.localbox_client.path, event.src_path))
             openfiles_ctrl.remove(
                 filesystem_path=os_utils.remove_extension(event.src_path, defaults.LOCALBOX_EXTENSION))
@@ -110,8 +110,10 @@ def _should_modify_file(path):
         path) > 0 and os_utils.hash_file(path) != openfiles_ctrl.load()[path]
 
 
-def _should_delete_file(event):
-    return event.src_path.endswith(defaults.LOCALBOX_EXTENSION) or event.is_directory
+def _should_delete_file(event, localbox_client):
+    return event.src_path.endswith(
+        defaults.LOCALBOX_EXTENSION) or event.is_directory or localbox_client.get_meta(
+        get_localbox_path(localbox_client.path, event.src_path))['is_dir']
 
 
 def create_watchdog(sync_item):

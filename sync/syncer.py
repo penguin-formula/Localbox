@@ -166,10 +166,13 @@ class Syncer(object):
 
     @staticmethod
     def _is_modified(filesystem_path):
+        new_hash = os_utils.hash_file(filesystem_path)
         try:
-            is_modified = os_utils.hash_file(filesystem_path) != openfiles_ctrl.load()[filesystem_path]
+            is_modified = new_hash != openfiles_ctrl.load()[filesystem_path]
         except KeyError:
             is_modified = True
+
+        openfiles_ctrl.load()[filesystem_path] = new_hash
         return is_modified
 
     @profile

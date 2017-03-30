@@ -1,6 +1,6 @@
 import pickle
 from logging import getLogger
-from os.path import exists
+from os.path import exists, isfile
 
 from loxcommon import os_utils
 from sync.defaults import LOCALBOX_OPENFILES
@@ -22,7 +22,7 @@ def remove(filesystem_path):
         os_utils.shred(filesystem_path)
         del openfiles_list[filesystem_path]
         save(openfiles_list)
-    else:
+    elif isfile(filesystem_path):
         getLogger(__name__).error('%s was not found in the list of opened files' % filesystem_path)
 
 
