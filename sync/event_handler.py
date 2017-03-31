@@ -107,13 +107,18 @@ def _should_upload_file(path):
 
 def _should_modify_file(path):
     return exists(path) and not path.endswith(defaults.LOCALBOX_EXTENSION) and isfile(path) and os.path.getsize(
-        path) > 0 and os_utils.hash_file(path) != openfiles_ctrl.load()[path]
+        path) > 0 and os_utils.hash_file(path) != openfiles_ctrl.get_hash(path)
 
 
 def _should_delete_file(event, localbox_client):
-    return event.src_path.endswith(
-        defaults.LOCALBOX_EXTENSION) or event.is_directory or localbox_client.get_meta(
-        get_localbox_path(localbox_client.path, event.src_path))['is_dir']
+    if os_utils.is_windows():
+        # The watchdog library has a bug on event.is_directory: https://github.com/gorakhargosh/watchdog/issues/92
+        # so everything else is false we'll ask the backend for help
+        return event.src_path.endswith(
+            defaults.LOCALBOX_EXTENSION) or event.is_directory or localbox_client.get_meta(
+            get_localbox_path(localbox_client.path, event.src_path))['is_dir']
+
+    return event.src_path.endswith(defaults.LOCALBOX_EXTENSION) or event.is_directory
 
 
 def create_watchdog(sync_item):

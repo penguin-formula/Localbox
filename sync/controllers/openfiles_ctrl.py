@@ -19,7 +19,6 @@ def add(filename):
 def remove(filesystem_path):
     openfiles_list = load()
     if filesystem_path in openfiles_list.keys():
-        os_utils.shred(filesystem_path)
         del openfiles_list[filesystem_path]
         save(openfiles_list)
     elif isfile(filesystem_path):
@@ -47,8 +46,12 @@ def load():
 
 def remove_all():
     getLogger(__name__).info('removing all decrypted files')
-    for filename in load():
-        try:
-            remove(filename)
-        except Exception as ex:
-            getLogger(__name__).error('could not remove file %s, %s' % (filename, ex))
+    remove_these = filter(lambda fp: os_utils.shred(fp), load())
+    map(lambda fp: remove(fp), remove_these)
+
+
+def get_hash(filesystem_path):
+    try:
+        return load()[filesystem_path]
+    except KeyError:
+        return None
