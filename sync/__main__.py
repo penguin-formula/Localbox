@@ -124,9 +124,6 @@ def run_file_decryption(filename):
 
 
 if __name__ == '__main__':
-    getLogger(__name__).info("LocalBox Sync Version: %s (%s)", sync.__version__.VERSION_STRING,
-                             sync.__version__.git_version)
-
     if not exists(APPDIR):
         mkdir(APPDIR)
 
@@ -142,6 +139,9 @@ if __name__ == '__main__':
 
     prepare_logging(configparser, log_path=LOG_PATH)
     getLogger('gnupg').setLevel(ERROR)
+
+    getLogger(__name__).info("LocalBox Sync Version: %s (%s)", sync.__version__.VERSION_STRING,
+                             sync.__version__.git_version)
 
     signal.signal(signal.SIGINT, openfiles_ctrl.remove_all)
     signal.signal(signal.SIGTERM, openfiles_ctrl.remove_all)
