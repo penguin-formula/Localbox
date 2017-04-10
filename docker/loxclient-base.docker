@@ -28,7 +28,9 @@ RUN apt update --fix-missing && \
         thunar \
         gnome-icon-theme \
         exo-utils \
-        xdg-utils
+        xdg-utils \
+        mousepad \
+        evince
 
 # Prepare pip and install packages. Add requirements alone first in order to
 # make of cache for that single file
