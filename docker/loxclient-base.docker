@@ -1,5 +1,7 @@
 FROM ubuntu:16.04
 
+WORKDIR /usr/app/LoxClient
+
 # System packages
 RUN apt update --fix-missing && \
     apt -qq -y install build-essential \
@@ -28,9 +30,11 @@ RUN apt update --fix-missing && \
         exo-utils \
         xdg-utils
 
-# Prepare pip and install some packages
+# Prepare pip and install packages. Add requirements alone first in order to
+# make of cache for that single file
 RUN pip install --upgrade pip
-RUN pip install psutil
+ADD requirements.txt /usr/app
+RUN pip install -r requirements.txt
 RUN python -m pip install -U --pre -f https://wxpython.org/Phoenix/snapshot-builds/linux/gtk2/ubuntu-16.04/wxPython_Phoenix-3.0.3.dev2873+5fec882-cp27-cp27mu-linux_x86_64.whl wxPython_Phoenix
 
 # Add this tool to path so translations may be done bellow
@@ -41,10 +45,6 @@ ENV PATH /usr/app/bin:$PATH
 # Add sources
 ADD LoxClient /usr/app/LoxClient
 ADD LoxCommon /usr/app/LoxCommon
-
-# Install pip packages
-WORKDIR /usr/app/LoxClient
-RUN pip install -r requirements.txt
 
 # Make translations
 RUN make translations
@@ -61,7 +61,6 @@ RUN cd data && xdg-mime default localbox.desktop application/x-localbox
 RUN xdg-icon-resource install --size 32 --context mimetypes data/icon/localbox.png application-x-localbox
 RUN xdg-icon-resource install --size 48 --context mimetypes data/icon/localbox.png application-x-localbox
 RUN xdg-icon-resource install --size 64 --context mimetypes data/icon/localbox.png application-x-localbox
-
 
 # Container will start this command
 CMD ["python", "-m", "sync"]
