@@ -27,7 +27,7 @@ class LocalBoxApp(wx.App):
         """
         wx.App init function that returns False if the app is already running.
         """
-        self.name = "LocalBoxApp-%s".format(wx.GetUserId())
+        self.name = "LocalBoxApp-{}".format(wx.GetUserId())
         self.instance = wx.SingleInstanceChecker(self.name)
         if self.instance.IsAnotherRunning():
             wx.MessageBox(
