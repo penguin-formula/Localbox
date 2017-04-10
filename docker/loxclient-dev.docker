@@ -1,0 +1,6 @@
+FROM loxclient-base
+
+RUN apt -qq -y install \
+    vim \
+    sqlite3 \
+    net-tools
