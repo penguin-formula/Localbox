@@ -4,6 +4,7 @@ loxclient_default_per=~/LoxClientFiles
 
 function runLoxClient {
     exec_mode=$1
+    post_exec_mode=$exec_mode
 
     if [ $exec_mode = "dev" ]
     then
@@ -11,12 +12,10 @@ function runLoxClient {
         getArg arg_value "-v" "${@:2}"
         has_volume=$?
 
+        post_exec_mode=pre
+
         if [ $has_volume -eq 1 ]
         then
-            # Is there an alternative directory for files
-            getArg alt_per_dir "--dir" "${@:2}"
-            is_alt_per_dir=$?
-
             if [ -z $arg_value ]
             then
                 arg_value=$loxclient_default_per
@@ -39,6 +38,7 @@ function runLoxClient {
         fi
     else
         echo todo
+        exit 0
     fi
 
     # Setup command
@@ -56,9 +56,11 @@ function runLoxClient {
             --name loxclient-$exec_mode \
             --net=host \
             $loxclient_args \
+            -u $(awk "BEGIN { printf \"%d:%d\", $(id -u), $(id -g) }") \
             -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e DISPLAY=$DISPLAY \
-            loxclient-$exec_mode
+            loxclient-$post_exec_mode
+
     elif [ $is_cmd_arg -eq 1 ]
     then
         sudo docker exec \

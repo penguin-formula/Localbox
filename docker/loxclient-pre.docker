@@ -1,0 +1,6 @@
+FROM loxclient-base
+
+RUN useradd -ms /bin/bash containeruser
+USER containeruser
+
+RUN mkdir -p /home/containeruser/.config/localbox
