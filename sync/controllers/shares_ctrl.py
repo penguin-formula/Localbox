@@ -50,7 +50,8 @@ class SharesController(object):
         map(lambda i: self._list.remove(i), filter(lambda i: i.label == label, self._list))
 
     def save(self):
-        pickle.dump(self._list, open(LOCALBOX_SHARES_PATH, 'wb'))
+        with open(LOCALBOX_SHARES_PATH, 'wb') as f:
+            pickle.dump(self._list, f)
 
     def load(self):
         self._list = []

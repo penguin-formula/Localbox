@@ -15,7 +15,8 @@ def add(filename):
 
 
 def save(openfiles_list):
-    pickle.dump(openfiles_list, open(LOCALBOX_OPENFILES, 'wb'))
+    with open(LOCALBOX_OPENFILES, 'wb') as f:
+        pickle.dump(openfiles_list, f)
     getLogger(__name__).debug('saved opened files: %s' % openfiles_list)
 
 

@@ -36,11 +36,13 @@ class SyncsController(object):
         return label
 
     def save(self):
-        pickle.dump(self._list, open(LOCALBOX_SITES_PATH, 'wb'))
+        with open(LOCALBOX_SITES_PATH, 'wb') as f:
+            pickle.dump(self._list, f)
 
     def load(self):
         try:
-            self._list = pickle.load(open(LOCALBOX_SITES_PATH, 'rb'))
+            with open(LOCALBOX_SITES_PATH, 'rb') as f:
+                self._list = pickle.load(f)
         except IOError as error:
             getLogger(__name__).warn('%s' % error)
 
