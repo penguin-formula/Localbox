@@ -1,6 +1,7 @@
 import pickle
 
-from sync.defaults import LOCALBOX_PREFERENCES_PATH
+from logging import getLogger
+from sync.defaults import LOCALBOX_ACCOUNT_PATH
 
 
 class AccountController:
