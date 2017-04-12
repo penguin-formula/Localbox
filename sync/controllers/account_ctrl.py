@@ -21,10 +21,10 @@ class AccountController:
             self.save()
 
     def save(self):
-        pickle.dump(self.lst_localbox, open(LOCALBOX_PREFERENCES_PATH, 'wb'))
+        pickle.dump(self.lst_localbox, open(LOCALBOX_ACCOUNT_PATH, 'wb'))
 
     def load(self):
-        self.lst_localbox = pickle.load(open(LOCALBOX_PREFERENCES_PATH, 'rb'))
+        self.lst_localbox = pickle.load(open(LOCALBOX_ACCOUNT_PATH, 'rb'))
         return self.lst_localbox
 
 
