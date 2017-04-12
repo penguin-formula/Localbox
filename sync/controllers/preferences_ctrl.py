@@ -26,9 +26,8 @@ class PreferencesController(object):
     def save(self):
         getLogger(__name__).debug('Saving preferences: %s' % self._prefs)
 
-        if exists(LOCALBOX_PREFERENCES_PATH):
-            with open(LOCALBOX_PREFERENCES_PATH, 'wb') as f:
-                pickle.dump(self._prefs, f)
+        with open(LOCALBOX_PREFERENCES_PATH, 'wb') as f:
+            pickle.dump(self._prefs, f)
 
     def load(self):
         getLogger(__name__).debug('Loading preferences: %s' % self._prefs)
