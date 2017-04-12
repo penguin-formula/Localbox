@@ -12,10 +12,10 @@ function runLoxClient {
         getArg arg_value "-v" "${@:2}"
         has_volume=$?
 
-        post_exec_mode=pre
-
         if [ $has_volume -eq 1 ]
         then
+            post_exec_mode=pre
+
             if [ -z $arg_value ]
             then
                 arg_value=$loxclient_default_per
@@ -24,14 +24,13 @@ function runLoxClient {
             if [ ! -d "$arg_value" ]
             then
                 mkdir -p $arg_value
-                mkdir $arg_value/client_config
-                mkdir $arg_value/client_gpg
+                mkdir -p $arg_value/client_home
+                mkdir -p $arg_value/client_home/.config/localbox
                 mkdir $arg_value/client_directory
             fi
 
             loxclient_args="\
-                -v $arg_value/client_config:/root/.config/localbox \
-                -v $arg_value/client_gpg:/root/.gnupg \
+                -v $arg_value/client_home:/home/containeruser \
                 -v $arg_value/client_directory:/usr/app/dir"
         else
             loxclient_args=""
