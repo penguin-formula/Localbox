@@ -32,13 +32,6 @@ from random import randint
 EXPIRATION_LEEWAY = 5
 
 
-class AuthenticationError(Exception):
-    """
-    Custom error class to signify problems in authentication
-    """
-    pass
-
-
 def generate_client_id():
     """
     generate a client id
@@ -170,11 +163,10 @@ class Authenticator(object):
         try:
             self._call_authentication_server(authdata)
             if self.access_token is not None:
-                getLogger(__name__).debug('Authentication Succesful. Saving Client Data')
+                getLogger(__name__).debug('Authentication Successful. Saving Client Data')
                 self.save_client_data()
                 return True
         except (HTTPError, URLError) as error:
-            getLogger(__name__).exception(error)
             if hasattr(error, 'code') and error.code != 401:   # HTTP Error 401: Unauthorized
                 raise error
         # clear credentials on failure
@@ -234,6 +226,13 @@ class Authenticator(object):
             getLogger(__name__).debug("Token expired. Reauthenticating")
             self.authenticate_with_client_secret()
         return 'Bearer ' + self.access_token
+
+
+class AuthenticationError(Exception):
+    """
+    Custom error class to signify problems in authentication
+    """
+    pass
 
 
 class AlreadyAuthenticatedError(Exception):
