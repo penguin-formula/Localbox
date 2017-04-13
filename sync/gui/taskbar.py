@@ -150,7 +150,10 @@ class LocalBoxIcon(TaskBarIcon):
         """
         self.frame.Close()
         self.delete_decrypted()
-        exit(1)
+        self.Destroy()
+
+        app = wx.GetApp()
+        app.ExitMainLoop()
 
     def OnTaskBarClick(self, event):  # pylint: disable=W0613
         """
