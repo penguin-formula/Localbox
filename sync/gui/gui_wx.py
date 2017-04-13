@@ -293,7 +293,8 @@ class SharePanel(LoxPanel):
         self.SetSizer(vbox)
 
     def on_btn_sync(self, wx_event):
-        pass
+        # self._main_syncing_thread.sync()
+        self.sync()
 
     def on_btn_add(self, wx_event):
         NewShareDialog(self, self.ctrl)
@@ -305,14 +306,17 @@ class SharePanel(LoxPanel):
 
     def on_show(self, wx_event=None):
         if self.IsShown():
-            worker = PopulateThread(self, self.ctrl.load)
-            worker.start()
-
-            self.btn_add.Enable(len(self.ctrl_lox) > 0)
+            self.sync()
 
     def on_populate(self, wx_event):
         self.ctrl.populate(wx_event.get_value())
         self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
+
+    def sync(self):
+        worker = PopulateThread(self, self.ctrl.load)
+        worker.start()
+
+        self.btn_add.Enable(len(self.ctrl_lox) > 0)
 
 class AccountPanel(wx.Panel):
     """
