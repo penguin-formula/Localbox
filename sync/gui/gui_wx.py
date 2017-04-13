@@ -233,10 +233,11 @@ class LocalboxPanel(LoxPanel):
         vbox.Add((-1, 25))
 
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
-        hbox4.Add(self.btn_sync)
-        hbox4.Add(self.btn_add)
-        hbox4.Add(self.btn_del)
-        vbox.Add(hbox4, flag=wx.ALIGN_RIGHT | wx.RIGHT, border=10)
+        hbox4.Add(self.btn_sync, 0, wx.EXPAND)
+        hbox4.Add((0, 0), 1, wx.EXPAND)
+        hbox4.Add(self.btn_add, 0, wx.EXPAND)
+        hbox4.Add(self.btn_del, 0, wx.EXPAND)
+        vbox.Add(hbox4, flag=wx.ALIGN_CENTER | wx.CENTER | wx.EXPAND | wx.EAST | wx.WEST, border=10)
 
         vbox.Add((-1, 25))
 
@@ -290,10 +291,11 @@ class SharePanel(LoxPanel):
         vbox.Add((-1, 25))
 
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
-        hbox4.Add(self.btn_sync)
-        hbox4.Add(self.btn_add)
-        hbox4.Add(self.btn_del)
-        vbox.Add(hbox4, flag=wx.ALIGN_RIGHT | wx.RIGHT, border=10)
+        hbox4.Add(self.btn_sync, 0, wx.EXPAND)
+        hbox4.Add((0, 0), 1, wx.EXPAND)
+        hbox4.Add(self.btn_add, 0, wx.EXPAND)
+        hbox4.Add(self.btn_del, 0, wx.EXPAND)
+        vbox.Add(hbox4, flag=wx.ALIGN_CENTER | wx.CENTER | wx.EXPAND | wx.EAST | wx.WEST, border=10)
 
         vbox.Add((-1, 25))
 
