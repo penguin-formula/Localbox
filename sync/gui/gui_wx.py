@@ -188,12 +188,20 @@ class LoxPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self.on_btn_del, self.btn_del)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_list_item_selected)
         self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._on_list_item_deselected)
+        self.Bind(wx.EVT_LIST_DELETE_ITEM, self._on_list_delete_item)
+        self.Bind(wx.EVT_LIST_INSERT_ITEM, self._on_list_insert_item)
 
     def _on_list_item_selected(self, wx_event):
         self.btn_del.Enable(True)
 
     def _on_list_item_deselected(self, wx_event):
         self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
+
+    def _on_list_delete_item(self, wx_event):
+        self.btn_sync.Enable(self.ctrl.GetItemCount() > 1)
+
+    def _on_list_insert_item(self, wx_event):
+        self.btn_sync.Enable(self.ctrl.GetItemCount() > 0)
 
 
 class LocalboxPanel(LoxPanel):
@@ -234,6 +242,7 @@ class LocalboxPanel(LoxPanel):
 
         self.SetSizer(vbox)
 
+        self.btn_sync.Enable(False)
         self.btn_del.Enable(False)
 
     def on_btn_sync(self, wx_event):
@@ -281,19 +290,20 @@ class SharePanel(LoxPanel):
         vbox.Add((-1, 25))
 
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
+        hbox4.Add(self.btn_sync)
         hbox4.Add(self.btn_add)
         hbox4.Add(self.btn_del)
         vbox.Add(hbox4, flag=wx.ALIGN_RIGHT | wx.RIGHT, border=10)
 
         vbox.Add((-1, 25))
 
+        self.btn_sync.Enable(len(self.ctrl_lox) > 0)
         self.btn_add.Enable(len(self.ctrl_lox) > 0)
         self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
 
         self.SetSizer(vbox)
 
     def on_btn_sync(self, wx_event):
-        # self._main_syncing_thread.sync()
         self.sync()
 
     def on_btn_add(self, wx_event):
@@ -316,6 +326,7 @@ class SharePanel(LoxPanel):
         worker = PopulateThread(self, self.ctrl.load)
         worker.start()
 
+        self.btn_sync.Enable(len(self.ctrl_lox) > 0)
         self.btn_add.Enable(len(self.ctrl_lox) > 0)
 
 class AccountPanel(wx.Panel):
