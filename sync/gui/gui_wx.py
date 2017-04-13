@@ -178,10 +178,12 @@ class LoxPanel(wx.Panel):
     def __init__(self, parent=None, id=None, pos=None, size=None, style=None, name=None):
         wx.Panel.__init__(self, parent, id=wx.ID_ANY, size=MAIN_PANEL_SIZE)
 
+        self.btn_sync = wx.Button(self, label=_('Sync'), size=(100, 30))
         self.btn_add = wx.Button(self, label=_('Add'), size=(100, 30))
         self.btn_del = wx.Button(self, label=_('Delete'), size=(100, 30))
 
         # Bind events
+        self.Bind(wx.EVT_BUTTON, self.on_btn_sync, self.btn_sync)
         self.Bind(wx.EVT_BUTTON, self.on_btn_add, self.btn_add)
         self.Bind(wx.EVT_BUTTON, self.on_btn_del, self.btn_del)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_list_item_selected)
@@ -223,6 +225,7 @@ class LocalboxPanel(LoxPanel):
         vbox.Add((-1, 25))
 
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
+        hbox4.Add(self.btn_sync)
         hbox4.Add(self.btn_add)
         hbox4.Add(self.btn_del)
         vbox.Add(hbox4, flag=wx.ALIGN_RIGHT | wx.RIGHT, border=10)
@@ -232,6 +235,9 @@ class LocalboxPanel(LoxPanel):
         self.SetSizer(vbox)
 
         self.btn_del.Enable(False)
+
+    def on_btn_sync(self, wx_event):
+        self._main_syncing_thread.sync()
 
     def on_btn_add(self, wx_event):
         NewSyncWizard(self.ctrl, self.event)
@@ -285,6 +291,9 @@ class SharePanel(LoxPanel):
         self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
 
         self.SetSizer(vbox)
+
+    def on_btn_sync(self, wx_event):
+        pass
 
     def on_btn_add(self, wx_event):
         NewShareDialog(self, self.ctrl)
