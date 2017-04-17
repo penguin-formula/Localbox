@@ -103,4 +103,17 @@ The translations will be in:
 Decrypting Files
 ================
 
-TODO
+To decrypt inside the docker start a bash section in them:
+
+    sudo docker exec -it CONTAINER_NAME bash
+
+The ``CONTAINER_NAME`` should be ``loxclient-dev`` or ``loxclient-pre``.
+
+The command will start a bash section in container. The default directory will
+be:
+
+    /usr/app/LoxClient
+
+To decrypt a file, for example, if that file is ``SubDir/file.txt.lox``, do:
+
+    python -m sync /usr/app/dir/SubDir/file.txt.lox
