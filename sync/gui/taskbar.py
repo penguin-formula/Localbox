@@ -175,6 +175,17 @@ class LocalBoxIcon(TaskBarIcon):
 # the browser
 class OpenFileHandler(BaseHTTPRequestHandler):
     def do_POST(self):
+        service = self.get_service()
+
+        if service == "open_file":
+            self.open_file()
+
+        # IF the service wasn't found, just return 404
+        else:
+            getLogger(__name__).info('request "{}" couldn\'t be handled'.format(service))
+            self.send_response(404)
+
+    def open_file(self):
         # Get request data
         content_len = int(self.headers.getheader('content-length', 0))
         post_body = self.rfile.read(content_len)
@@ -220,6 +231,13 @@ class OpenFileHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
         self.wfile.write(tmp_decoded_filename)
+
+    def get_service(self):
+        path = self.path
+        if path.startswith('/'):
+            path = path[1:]
+
+        return path.split('/')[0]
 
 
 def port_available(port):
