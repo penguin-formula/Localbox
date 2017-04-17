@@ -18,7 +18,6 @@ from loxcommon import os_utils
 from loxcommon.log import prepare_logging
 from loxcommon.os_utils import open_file_ext
 from sync import defaults
-from sync.controllers import openfiles_ctrl
 from sync.controllers.localbox_ctrl import ctrl as sync_ctrl
 from sync.controllers.login_ctrl import LoginController
 from sync.gui import gui_utils
@@ -102,7 +101,6 @@ def run_file_decryption(filename):
             tmp_decoded_filename = answer.read()
 
             open_file_ext(tmp_decoded_filename)
-            openfiles_ctrl.add(tmp_decoded_filename)
 
             getLogger(__name__).info('Finished decrypting and opening file: %s', filename)
 

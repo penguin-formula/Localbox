@@ -232,6 +232,9 @@ class OpenFileHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(tmp_decoded_filename)
 
+        # Keep file in list of opened files
+        openfiles_ctrl.add(tmp_decoded_filename)
+
     def get_service(self):
         path = self.path
         if path.startswith('/'):
