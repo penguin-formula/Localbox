@@ -444,7 +444,13 @@ def remove_decrypted_files():
     import os, sync.controllers.openfiles_ctrl as ctrl
 
     getLogger(__name__).info('removing decrypted files')
-    for filename in ctrl.load():
+
+    files = ctrl.load()
+
+    if files is None:
+        return
+
+    for filename in files:
         try:
             os.remove(filename)
         except Exception as ex:

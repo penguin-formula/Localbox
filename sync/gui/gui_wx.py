@@ -15,7 +15,7 @@ from sync.gui.gui_utils import MAIN_FRAME_SIZE, MAIN_PANEL_SIZE, \
     MAIN_TITLE, DEFAULT_BORDER, PASSPHRASE_DIALOG_SIZE, PASSPHRASE_TITLE
 from sync.gui.wizard import NewSyncWizard
 from sync.language import LANGUAGES
-from sync.localbox import LocalBox, InvalidLocalBoxPathError, get_localbox_path
+from sync.localbox import LocalBox, InvalidLocalBoxPathError, get_localbox_path, remove_decrypted_files
 
 
 class LocalBoxApp(wx.App):
@@ -179,11 +179,13 @@ class LoxPanel(wx.Panel):
         wx.Panel.__init__(self, parent, id=wx.ID_ANY, size=MAIN_PANEL_SIZE)
 
         self.btn_sync = wx.Button(self, label=_('Sync'), size=(100, 30))
+        self.btn_rem = wx.Button(self, label=_('Clean'), size=(100, 30))
         self.btn_add = wx.Button(self, label=_('Add'), size=(100, 30))
         self.btn_del = wx.Button(self, label=_('Delete'), size=(100, 30))
 
         # Bind events
         self.Bind(wx.EVT_BUTTON, self.on_btn_sync, self.btn_sync)
+        self.Bind(wx.EVT_BUTTON, self.on_btn_rem, self.btn_rem)
         self.Bind(wx.EVT_BUTTON, self.on_btn_add, self.btn_add)
         self.Bind(wx.EVT_BUTTON, self.on_btn_del, self.btn_del)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_list_item_selected)
@@ -234,6 +236,7 @@ class LocalboxPanel(LoxPanel):
 
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
         hbox4.Add(self.btn_sync, 0, wx.EXPAND)
+        hbox4.Add(self.btn_rem, 0, wx.EXPAND)
         hbox4.Add((0, 0), 1, wx.EXPAND)
         hbox4.Add(self.btn_add, 0, wx.EXPAND)
         hbox4.Add(self.btn_del, 0, wx.EXPAND)
@@ -249,6 +252,9 @@ class LocalboxPanel(LoxPanel):
     def on_btn_sync(self, wx_event):
         labels_to_sync = self.ctrl.selected()
         self._main_syncing_thread.sync(labels_to_sync)
+
+    def on_btn_rem(self, wx_event):
+        remove_decrypted_files()
 
     def on_btn_add(self, wx_event):
         NewSyncWizard(self.ctrl, self.event)
@@ -293,6 +299,7 @@ class SharePanel(LoxPanel):
 
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
         hbox4.Add(self.btn_sync, 0, wx.EXPAND)
+        hbox4.Add(self.btn_rem, 0, wx.EXPAND)
         hbox4.Add((0, 0), 1, wx.EXPAND)
         hbox4.Add(self.btn_add, 0, wx.EXPAND)
         hbox4.Add(self.btn_del, 0, wx.EXPAND)
@@ -311,6 +318,9 @@ class SharePanel(LoxPanel):
 
     def on_btn_add(self, wx_event):
         NewShareDialog(self, self.ctrl)
+
+    def on_btn_rem(self, wx_event):
+        remove_decrypted_files()
 
     def on_btn_del(self, wx_event):
         question = _('This will also delete the directory in your LocalBox and for all users. Continue?')

@@ -29,3 +29,4 @@ def load():
     except IOError:
         openfiles_list = list()
         save(openfiles_list)
+        return None
