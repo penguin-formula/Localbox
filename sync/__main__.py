@@ -2,6 +2,7 @@
 main module for localbox sync
 """
 import os
+import pickle
 import signal
 import json
 import urllib
@@ -25,7 +26,7 @@ from sync.gui import gui_wx
 from sync.gui.taskbar import taskbarmain
 from sync.localbox import LocalBox, remove_decrypted_files
 from sync.syncer import MainSyncer
-from .defaults import LOG_PATH, APPDIR, SYNCINI_PATH
+from .defaults import LOG_PATH, APPDIR, SYNCINI_PATH, OPEN_FILE_PORT
 
 try:
     from ConfigParser import ConfigParser, SafeConfigParser
@@ -86,7 +87,10 @@ def run_file_decryption(filename):
             "localbox_filename": localbox_filename
         }
 
-        url = 'http://localhost:9090/open_file'
+        with open(OPEN_FILE_PORT, 'rb') as f:
+            port = pickle.load(f)
+
+        url = 'http://localhost:{}/open_file'.format(port)
         data = json.dumps(data_dic)
         req = urllib2.Request(url, data, {'Content-Type': 'application/json'})
 
