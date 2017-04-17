@@ -30,3 +30,4 @@ LOCALBOX_EXTENSION = '.lox'
 
 OLD_SYNC_STATUS = join(APPDIR, 'localbox.pickle.')
 LOCALBOX_OPENFILES = join(APPDIR, 'openfiles.pickle')
+OPEN_FILE_PORT = join(APPDIR, 'open_file_port.pickle')
