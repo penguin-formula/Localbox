@@ -176,7 +176,7 @@ PORT_NUMBER = 9090
 
 # This class will handles any incoming request from
 # the browser
-class PassphraseHandler(BaseHTTPRequestHandler):
+class OpenFileHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         # Get request data
         content_len = int(self.headers.getheader('content-length', 0))
@@ -225,11 +225,10 @@ class PassphraseHandler(BaseHTTPRequestHandler):
         self.wfile.write(tmp_decoded_filename)
 
 
-def passphrase_server(server):
-    getLogger(__name__).info('Started passhphrase server on port %s' % PORT_NUMBER)
-
+def open_file_server(server):
     # Wait forever for incoming http requests
     server.serve_forever()
+    getLogger(__name__).info('Started open file server on port %s' % PORT_NUMBER)
 
 
 def is_first_run():
@@ -243,12 +242,12 @@ def taskbarmain(main_syncing_thread, sites=None):
     app = LocalBoxApp(False)
 
     try:
-        server = HTTPServer(('', PORT_NUMBER), PassphraseHandler)
+        server = HTTPServer(('', PORT_NUMBER), OpenFileHandler)
     except:
-        getLogger(__name__).exception('Failed to start passphrase server')
+        getLogger(__name__).exception('Failed to start open file server')
         return 1
 
-    MAIN = Thread(target=passphrase_server, args=[server])
+    MAIN = Thread(target=open_file_server, args=[server])
     MAIN.daemon = True
     MAIN.start()
 
