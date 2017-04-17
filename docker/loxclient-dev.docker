@@ -4,3 +4,12 @@ RUN apt -qq -y install \
     vim \
     sqlite3 \
     net-tools
+
+# User stuff
+RUN useradd -ms /bin/bash containeruser
+USER containeruser
+
+RUN mkdir -p /home/containeruser/.config/localbox
+
+# Container will start this command
+ENTRYPOINT ["python", "-m", "sync"]

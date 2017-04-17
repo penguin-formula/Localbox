@@ -1,0 +1,4 @@
+FROM loxclient-base
+
+# Container will start this command
+ENTRYPOINT []
