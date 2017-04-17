@@ -3,6 +3,9 @@ main module for localbox sync
 """
 import os
 import signal
+import json
+import urllib
+import urllib2
 from logging import getLogger, ERROR
 from os import makedirs, mkdir
 from os.path import dirname, isdir, exists
@@ -75,43 +78,35 @@ def run_file_decryption(filename):
             getLogger(__name__).error('%s does not belong to any configured localbox' % filename)
             exit(1)
 
-        # get passphrase
-        label = localbox_client.authenticator.label
-        passphrase = LoginController().get_passphrase(label, remote=True)
-        if not passphrase:
-            gui_wx.ask_passphrase(localbox_client.username, label)
-            passphrase = LoginController().get_passphrase(label, remote=False)
-            if not passphrase:
-                gui_utils.show_error_dialog(_('Failed to get passphrase for label: %s.') % label, 'Error', True)
-                getLogger(__name__).error('failed to get passphrase for label: %s. Exiting..' % label)
-                exit(1)
+        # Request file to be opened
+        data_dic = {
+            "url": sync_item.url,
+            "label": localbox_client.authenticator.label,
+            "filename": filename,
+            "localbox_filename": localbox_filename
+        }
 
-        # decode file
-        try:
-            decoded_contents = localbox_client.decode_file(localbox_filename, filename, passphrase)
-        except URLError:
+        url = 'http://localhost:9090/open_file'
+        data = json.dumps(data_dic)
+        req = urllib2.Request(url, data, {'Content-Type': 'application/json'})
+
+        answer = urllib2.urlopen(req)
+        res_code = answer.getcode()
+
+        # Open file and keep it in the open files list
+        if res_code == 200:
+            tmp_decoded_filename = answer.read()
+
+            open_file_ext(tmp_decoded_filename)
+            openfiles_ctrl.add(tmp_decoded_filename)
+
+            getLogger(__name__).info('Finished decrypting and opening file: %s', filename)
+
+        # The file may not exist, or something else might have gone wrong
+        elif res_code == 404:
             gui_utils.show_error_dialog(_('Failed to decode contents'), 'Error', standalone=True)
             getLogger(__name__).info('failed to decode contents. aborting')
-            return 1
-
-        # write file
-        tmp_decoded_filename = os_utils.remove_extension(filename, defaults.LOCALBOX_EXTENSION)
-        getLogger(__name__).info('tmp_decoded_filename: %s' % tmp_decoded_filename)
-
-        if os.path.exists(tmp_decoded_filename):
-            os.remove(tmp_decoded_filename)
-
-        localfile = open(tmp_decoded_filename, 'wb')
-        localfile.write(decoded_contents)
-        localfile.close()
-
-        # open file
-        open_file_ext(tmp_decoded_filename)
-
-        openfiles_ctrl.add(tmp_decoded_filename)
-
-        getLogger(__name__).info('Finished decrypting and opening file: %s', filename)
-
+            return
 
     except Exception as ex:
         getLogger(__name__).exception(ex)

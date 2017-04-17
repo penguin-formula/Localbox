@@ -8,6 +8,8 @@ except:
 from logging import getLogger
 from threading import Thread
 
+import json
+import os
 from os.path import exists
 
 import sync.gui.gui_utils as gui_utils
@@ -16,8 +18,10 @@ from sync.controllers.login_ctrl import LoginController
 from sync.defaults import LOCALBOX_SITES_PATH
 from sync.gui.gui_wx import Gui, LocalBoxApp
 from sync.__version__ import VERSION_STRING
-from sync.localbox import remove_decrypted_files
+from sync.localbox import LocalBox, remove_decrypted_files
 import sync.controllers.openfiles_ctrl as openfiles_ctrl
+from loxcommon import os_utils
+from sync import defaults
 
 try:
     import wx
@@ -32,8 +36,10 @@ except:
 
 try:
     from ConfigParser import ConfigParser  # pylint: disable=F0401,E0611
+    from urllib2 import URLError
 except ImportError:
     from configparser import ConfigParser  # pylint: disable=F0401,E0611
+    from urllib.error import URLError  # pylint: disable=F0401,W0611,E0611
 
 
 class LocalBoxIcon(TaskBarIcon):
@@ -180,7 +186,6 @@ class PassphraseHandler(BaseHTTPRequestHandler):
         # Send the html message
         passphrase = LoginController().get_passphrase(self.get_label())
         self.wfile.write(passphrase)
-        return
 
     def get_label(self):
         path = self.path
@@ -188,6 +193,53 @@ class PassphraseHandler(BaseHTTPRequestHandler):
             path = path[1:]
 
         return path.split('/')[0]
+
+    def do_POST(self):
+        # Get request data
+        content_len = int(self.headers.getheader('content-length', 0))
+        post_body = self.rfile.read(content_len)
+        data_dic = json.loads(post_body)
+
+        # Get passphrase
+        passphrase = LoginController().get_passphrase(data_dic["label"])
+
+        # Stat local box instance
+        localbox_client = LocalBox(data_dic["url"], data_dic["label"])
+
+        # Attempt to decode the file
+        try:
+            decoded_contents = localbox_client.decode_file(
+                data_dic["localbox_filename"],
+                data_dic["filename"],
+                passphrase)
+
+        # If there was a failure, answer wit ha 404 to state that the file doesn't exist
+        except URLError:
+            gui_utils.show_error_dialog(_('Failed to decode contents'), 'Error', standalone=True)
+            getLogger(__name__).info('failed to decode contents. aborting')
+
+            self.send_response(404)
+            return
+
+        # If the file was decoded, write it to disk
+        tmp_decoded_filename = \
+            os_utils.remove_extension(data_dic["filename"],
+                                      defaults.LOCALBOX_EXTENSION)
+
+        getLogger(__name__).info('tmp_decoded_filename: %s' % tmp_decoded_filename)
+
+        if os.path.exists(tmp_decoded_filename):
+            os.remove(tmp_decoded_filename)
+
+        localfile = open(tmp_decoded_filename, 'wb')
+        localfile.write(decoded_contents)
+        localfile.close()
+
+        # Answer by sending the temporary file name, which is needed so it can be deleted later
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(tmp_decoded_filename)
 
 
 def passphrase_server(server):
