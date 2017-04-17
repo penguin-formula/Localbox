@@ -18,15 +18,15 @@ function runLoxClient {
             -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e DISPLAY=$DISPLAY \
             loxclient-dev
-    elif [ $exec_mode = "pre" ]; then
+    elif [ $exec_mode = "per" ]; then
         # Assure these directories exist
-        mkdir -p /home/pedro/LoxClientFiles/client_home/.config/localbox
-        mkdir -p /home/pedro/LoxClientFiles/client_directory
+        mkdir -p $loxclient_default_per/client_home/.config/localbox
+        mkdir -p $loxclient_default_per/client_directory
 
         sudo docker run \
             -it \
             --rm \
-            --name loxclient-pre \
+            --name loxclient-per \
             --net=host \
             -u $(awk "BEGIN { printf \"%d:%d\", $(id -u), $(id -g) }") \
             -v $(pwd)/../LoxClient:/usr/app/LoxClient \
@@ -34,7 +34,7 @@ function runLoxClient {
             -v $loxclient_default_per/client_directory:/usr/app/dir \
             -v /tmp/.X11-unix:/tmp/.X11-unix \
             -e DISPLAY=$DISPLAY \
-            loxclient-pre
+            loxclient-per
     elif [ $exec_mode = "manage"  ]; then
         sudo docker run \
             -it \
