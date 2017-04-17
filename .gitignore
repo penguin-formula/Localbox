@@ -14,3 +14,4 @@ syncdatabase.sqlite3
 *.exe
 docs/_diagrams/gen
 docs/_diagrams/*.svg
+sync/locale
