@@ -350,8 +350,12 @@ class MainSyncer(Thread):
         except Exception as error:  # pylint: disable=W0703
             getLogger(__name__).exception(error)
 
-    def sync(self, labels_to_sync):
-        self._labels_to_sync = labels_to_sync
+    def sync(self, labels_to_sync=None):
+        if labels_to_sync is None:
+            self._labels_to_sync = []
+        else:
+            self._labels_to_sync = labels_to_sync
+
         if not self.waitevent.is_set():
             self.waitevent.set()
         else:
