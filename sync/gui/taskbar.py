@@ -177,23 +177,6 @@ PORT_NUMBER = 9090
 # This class will handles any incoming request from
 # the browser
 class PassphraseHandler(BaseHTTPRequestHandler):
-    # Handler for the GET requests
-    def do_GET(self):
-        getLogger(__name__).debug('Got passphrase request for path=%s' % self.path)
-        self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
-        self.end_headers()
-        # Send the html message
-        passphrase = LoginController().get_passphrase(self.get_label())
-        self.wfile.write(passphrase)
-
-    def get_label(self):
-        path = self.path
-        if path.startswith('/'):
-            path = path[1:]
-
-        return path.split('/')[0]
-
     def do_POST(self):
         # Get request data
         content_len = int(self.headers.getheader('content-length', 0))
