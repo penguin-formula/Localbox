@@ -48,11 +48,9 @@ ENV PATH /usr/app/bin:$PATH
 ADD LoxClient /usr/app/LoxClient
 ADD LoxCommon /usr/app/LoxCommon
 
-# Make translations
-RUN make translations
-
 # gtk and LoxcalBox will store configurations in here
-RUN mkdir /root/.config
+RUN mkdir -p /root/.config
+RUN mkdir -p /root/.config/localbox
 
 # Set default application for .lox files
 RUN mkdir -p /root/.local/share/applications && \
@@ -63,6 +61,3 @@ RUN cd data && xdg-mime default localbox.desktop application/x-localbox
 RUN xdg-icon-resource install --size 32 --context mimetypes data/icon/localbox.png application-x-localbox
 RUN xdg-icon-resource install --size 48 --context mimetypes data/icon/localbox.png application-x-localbox
 RUN xdg-icon-resource install --size 64 --context mimetypes data/icon/localbox.png application-x-localbox
-
-# Container will start this command
-ENTRYPOINT ["python", "-m", "sync"]
