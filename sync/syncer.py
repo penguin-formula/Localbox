@@ -309,6 +309,7 @@ class MainSyncer(Thread):
         self._waitevent = event
         self._keep_running = True
         self._thread_pool = dict()
+        self._labels_to_sync = []
         self.daemon = True
 
     def run(self):
@@ -326,6 +327,8 @@ class MainSyncer(Thread):
                 getLogger(__name__).debug("starting loop")
                 self.waitevent.set()
                 for syncer in get_syncers():
+                    if len(self._labels_to_sync) > 0 and syncer.name not in self._labels_to_sync:
+                        continue
                     runner = SyncRunner(syncer=syncer)
                     getLogger(__name__).debug("starting thread %s", runner.name)
                     syncer.stop_event = Event()
@@ -347,7 +350,8 @@ class MainSyncer(Thread):
         except Exception as error:  # pylint: disable=W0703
             getLogger(__name__).exception(error)
 
-    def sync(self):
+    def sync(self, labels_to_sync):
+        self._labels_to_sync = labels_to_sync
         if not self.waitevent.is_set():
             self.waitevent.set()
         else:

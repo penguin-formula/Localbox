@@ -54,6 +54,12 @@ class SyncsController(object):
             if sync.label == other_label:
                 return sync
 
+    def getLabel(self, index):
+        try:
+            return self._list[index].label
+        except IndexError:
+            return None
+
     @property
     def list(self):
         return self._list

@@ -247,7 +247,8 @@ class LocalboxPanel(LoxPanel):
         self.btn_del.Enable(False)
 
     def on_btn_sync(self, wx_event):
-        self._main_syncing_thread.sync()
+        labels_to_sync = self.ctrl.selected()
+        self._main_syncing_thread.sync(labels_to_sync)
 
     def on_btn_add(self, wx_event):
         NewSyncWizard(self.ctrl, self.event)
@@ -700,6 +701,18 @@ class LocalboxListCtrl(wx.ListCtrl):
         """
         for item in self.ctrl.load():
             self.Append((item.label, item.path, item.url))
+
+    def selected(self):
+        idx = 0
+        prev = -1
+        labels_selected = []
+
+        for i in range(self.GetSelectedItemCount()):
+            idx = self.GetNextSelected(prev)
+            labels_selected.append(self.ctrl.getLabel(idx))
+            prev = idx
+
+        return labels_selected
 
     def add(self, item):
         getLogger(__name__).debug('%s: Add item %s' % (self.__class__.__name__, item))
