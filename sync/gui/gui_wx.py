@@ -179,30 +179,20 @@ class LoxPanel(wx.Panel):
         wx.Panel.__init__(self, parent, id=wx.ID_ANY, size=MAIN_PANEL_SIZE)
 
         # Make widgets
-        self.btn_rem = wx.Button(self, label=_('Clean'), size=(100, 30))
         self.btn_add = wx.Button(self, label=_('Add'), size=(100, 30))
         self.btn_del = wx.Button(self, label=_('Delete'), size=(100, 30))
 
         # Bind events
-        self.Bind(wx.EVT_BUTTON, self.on_btn_rem, self.btn_rem)
         self.Bind(wx.EVT_BUTTON, self.on_btn_add, self.btn_add)
         self.Bind(wx.EVT_BUTTON, self.on_btn_del, self.btn_del)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_list_item_selected)
         self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._on_list_item_deselected)
-        self.Bind(wx.EVT_LIST_DELETE_ITEM, self._on_list_delete_item)
-        self.Bind(wx.EVT_LIST_INSERT_ITEM, self._on_list_insert_item)
 
     def _on_list_item_selected(self, wx_event):
         self.btn_del.Enable(True)
 
     def _on_list_item_deselected(self, wx_event):
         self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
-
-    def _on_list_delete_item(self, wx_event):
-        self.btn_sync.Enable(self.ctrl.GetItemCount() > 1)
-
-    def _on_list_insert_item(self, wx_event):
-        self.btn_sync.Enable(self.ctrl.GetItemCount() > 0)
 
 
 class LocalboxPanel(LoxPanel):
@@ -218,9 +208,15 @@ class LocalboxPanel(LoxPanel):
         self.event = event
         self.ctrl = LocalboxListCtrl(self)
 
-        # Make widgets and bind events
+        # Make widgets
         self.btn_sync = wx.Button(self, label=_('Sync'), size=(100, 30))
+        self.btn_rem = wx.Button(self, label=_('Clean'), size=(100, 30))
+
+        # Bind events
         self.Bind(wx.EVT_BUTTON, self.on_btn_sync, self.btn_sync)
+        self.Bind(wx.EVT_BUTTON, self.on_btn_rem, self.btn_rem)
+        self.Bind(wx.EVT_LIST_DELETE_ITEM, self._on_list_delete_item)
+        self.Bind(wx.EVT_LIST_INSERT_ITEM, self._on_list_insert_item)
 
         # Layout
         self._DoLayout()
@@ -272,6 +268,12 @@ class LocalboxPanel(LoxPanel):
         """
         map(lambda l: self._main_syncing_thread.stop(l), self.ctrl.delete())
 
+    def _on_list_delete_item(self, wx_event):
+        self.btn_sync.Enable(self.ctrl.GetItemCount() > 1)
+
+    def _on_list_insert_item(self, wx_event):
+        self.btn_sync.Enable(self.ctrl.GetItemCount() > 0)
+
 
 class SharePanel(LoxPanel):
     """
@@ -284,9 +286,13 @@ class SharePanel(LoxPanel):
         self.ctrl = SharesListCtrl(self)
         self.ctrl_lox = SyncsController()
 
-        # Make widgets and bind events
+        # Make widgets
         self.btn_refresh = wx.Button(self, label=_('Refresh'), size=(100, 30))
+
+        # Bind events
         self.Bind(wx.EVT_BUTTON, self.on_btn_refresh, self.btn_refresh)
+        self.Bind(wx.EVT_LIST_DELETE_ITEM, self._on_list_delete_item)
+        self.Bind(wx.EVT_LIST_INSERT_ITEM, self._on_list_insert_item)
 
         # Layout
         self._DoLayout()
@@ -306,7 +312,6 @@ class SharePanel(LoxPanel):
 
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
         hbox4.Add(self.btn_refresh, 0, wx.EXPAND)
-        hbox4.Add(self.btn_rem, 0, wx.EXPAND)
         hbox4.Add((0, 0), 1, wx.EXPAND)
         hbox4.Add(self.btn_add, 0, wx.EXPAND)
         hbox4.Add(self.btn_del, 0, wx.EXPAND)
@@ -326,13 +331,16 @@ class SharePanel(LoxPanel):
     def on_btn_add(self, wx_event):
         NewShareDialog(self, self.ctrl)
 
-    def on_btn_rem(self, wx_event):
-        remove_decrypted_files()
-
     def on_btn_del(self, wx_event):
         question = _('This will also delete the directory in your LocalBox and for all users. Continue?')
         if gui_utils.show_confirm_dialog(self, question):
             self.ctrl.delete()
+
+    def _on_list_delete_item(self, wx_event):
+        self.btn_refresh.Enable(self.ctrl.GetItemCount() > 1)
+
+    def _on_list_insert_item(self, wx_event):
+        self.btn_refresh.Enable(self.ctrl.GetItemCount() > 0)
 
     def on_show(self, wx_event=None):
         if self.IsShown():
