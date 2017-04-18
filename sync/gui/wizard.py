@@ -149,18 +149,18 @@ class NewSyncInputsWizardPage(WizardPageSimple):
             SyncsController().check_uniq_path(path)
 
         except PathDoesntExistsException as e:
-            msg = "Path '{}' doesn't exist".format(e.path)
+            msg = _("Path '{}' doesn't exist").format(e.path)
 
-            gui_utils.show_error_dialog(message=_(msg), title=_('Invalid Path'))
+            gui_utils.show_error_dialog(message=msg, title=_('Invalid Path'))
 
             event.Veto()
             return
 
         except PathColisionException as e:
-            msg = "Path '{}' collides with path '{}' of sync {}".format(
+            msg = _("Path '{}' collides with path '{}' of sync {}").format(
                 e.path, e.sync_label, e.sync_path)
 
-            gui_utils.show_error_dialog(message=_(msg), title=_('Path Collision'))
+            gui_utils.show_error_dialog(message=msg, title=_('Path Collision'))
             event.Veto()
             return
 
@@ -265,7 +265,7 @@ class LoginWizardPage(WizardPageSimple):
         if self.parent.localbox_client.authenticator.is_authenticated():
             self.is_authenticated = True
             self._label_already_authenticated.SetLabel(
-                _("Already authenticated for: %s. Skipping authentication with password." % self.parent.box_label))
+                _("Already authenticated for: %s. Skipping authentication with password.") % self.parent.box_label)
             self.SetSizer(self.already_authenticated_sizer)
             self.already_authenticated_sizer.ShowItems(show=True)
             self.main_sizer.ShowItems(show=False)
