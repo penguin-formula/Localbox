@@ -1,5 +1,6 @@
 import json
 import pickle
+import os.path
 from logging import getLogger
 
 import sync.models.label_model as label_model
@@ -59,6 +60,39 @@ class SyncsController(object):
             return self._list[index].label
         except IndexError:
             return None
+
+    def check_uniq_path(self, path):
+        # Check if the path exists
+        if not os.path.exists(path):
+            raise PathDoesntExistsException(path)
+
+        # The path can't be sub path of an already synchronized directory, nor
+        # have a synchronized directory in it
+        def check_sub_dir(path_a, path_b):
+            path_a_list = os.path.realpath(path_a).split(os.path.sep)
+            path_b_list = os.path.realpath(path_b).split(os.path.sep)
+
+            for p_i, p_ele in enumerate(path_a_list):
+                if p_i >= len(path_b_list):
+                    return False
+
+                if p_ele != path_b_list[p_i]:
+                    return False
+
+            return True
+
+        for sync in self._list:
+            if check_sub_dir(path, sync.path) or check_sub_dir(sync.path, path):
+                raise PathColisionException(path, sync.label, sync.path)
+
+        return True
+
+    def check_uniq_label(self, label):
+        for sync in self._list:
+            if sync.label == label:
+                return False
+
+        return True
 
     @property
     def list(self):
@@ -135,3 +169,23 @@ def get_localbox_list():
     :return: list of LocalBox labels.
     """
     return map(lambda x: x.label, SyncsController().load())
+
+
+class PathDoesntExistsException(Exception):
+    def __init__(self, path):
+        self.path = path
+
+    def __str__(self):
+        return "Path '{}' doesn't exist".format(self.path)
+
+class PathColisionException(Exception):
+    def __init__(self, path, sync_label, sync_path):
+        self.path = path
+        self.sync_label = sync_label
+        self.sync_path = sync_path
+
+    def __str__(self):
+        return "Path '{}' collides with path '{}' of sync {}".format(
+            self.path,
+            self.sync_label,
+            self.sync_path)

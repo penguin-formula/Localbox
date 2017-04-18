@@ -22,7 +22,8 @@ from socket import error as SocketError
 
 import sync.gui.gui_utils as gui_utils
 import sync.auth as auth
-from sync.controllers.localbox_ctrl import SyncItem
+from sync.controllers.localbox_ctrl import SyncsController, SyncItem
+from sync.controllers.localbox_ctrl import PathDoesntExistsException, PathColisionException
 from sync.controllers.login_ctrl import LoginController
 from sync.localbox import LocalBox
 
@@ -122,32 +123,70 @@ class NewSyncInputsWizardPage(WizardPageSimple):
         url = self.url
         path = self.path
 
-        if gui_utils.is_valid_input(label) and gui_utils.is_valid_input(url) and gui_utils.is_valid_input(path):
-            self.sync_item = SyncItem(label=label,
-                                      url=url,
-                                      path=path)
-
-            try:
-                self.parent.localbox_client = LocalBox(url, label)
-            except (URLError, BadStatusLine, ValueError,
-                    auth.AlreadyAuthenticatedError) as error:
-                getLogger(__name__).debug("error with authentication url thingie")
-                getLogger(__name__).exception(error)
-            except SocketError as e:
-                if e.errno != errno.ECONNRESET:
-                    raise  # Not error we are looking for
-                getLogger(__name__).error('Failed to connect to server, maybe forgot https? %s', e)
-
-            self.parent.box_label = label
-            self.parent.path = path
-
-            if not self.parent.localbox_client:
-                getLogger(__name__).error('%s is not a valid URL' % url)
-                gui_utils.show_error_dialog(message=_('%s is not a valid URL') % url, title=_('Invalid URL'))
-                event.Veto()
-
-        else:
+        # Validate the inputs
+        if not gui_utils.is_valid_input(label):
+            gui_utils.show_error_dialog(message=_('%s is not a valid label') % label, title=_('Invalid Label'))
             event.Veto()
+            return
+
+        if not gui_utils.is_valid_input(url):
+            gui_utils.show_error_dialog(message=_('%s is not a valid URL') % url, title=_('Invalid URL'))
+            event.Veto()
+            return
+
+        if not gui_utils.is_valid_input(path):
+            gui_utils.show_error_dialog(message=_('%s is not a valid path') % path, title=_('Invalid Path'))
+            event.Veto()
+            return
+
+        # Check if the label of the directory are already in the Syncs
+        if not SyncsController().check_uniq_label(label):
+            gui_utils.show_error_dialog(message=_('Label "%s" already exists') % label, title=_('Invalid Label'))
+            event.Veto()
+            return
+
+        try:
+            SyncsController().check_uniq_path(path)
+
+        except PathDoesntExistsException as e:
+            msg = "Path '{}' doesn't exist".format(e.path)
+
+            gui_utils.show_error_dialog(message=_(msg), title=_('Invalid Path'))
+
+            event.Veto()
+            return
+
+        except PathColisionException as e:
+            msg = "Path '{}' collides with path '{}' of sync {}".format(
+                e.path, e.sync_label, e.sync_path)
+
+            gui_utils.show_error_dialog(message=_(msg), title=_('Path Collision'))
+            event.Veto()
+            return
+
+        # Create a localbox instance
+        # TODO: Errors in here need to be clarified
+        try:
+            self.parent.localbox_client = LocalBox(url, label)
+
+        except (URLError, BadStatusLine, ValueError,
+                auth.AlreadyAuthenticatedError) as error:
+            getLogger(__name__).debug("error with authentication url thingie")
+            getLogger(__name__).exception(error)
+
+            gui_utils.show_error_dialog(message=_('Can\'t authenticate with given username and password.'), title=_('Can\'t authenticate.'))
+            event.Veto()
+            return
+
+        except SocketError as e:
+            if e.errno != errno.ECONNRESET:
+                raise  # Not error we are looking for
+            getLogger(__name__).error('Failed to connect to server, maybe forgot https? %s', e)
+            event.Veto()
+            return
+
+        self.parent.box_label = label
+        self.parent.path = path
 
     @property
     def path(self):
