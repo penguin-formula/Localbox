@@ -178,13 +178,12 @@ class LoxPanel(wx.Panel):
     def __init__(self, parent=None, id=None, pos=None, size=None, style=None, name=None):
         wx.Panel.__init__(self, parent, id=wx.ID_ANY, size=MAIN_PANEL_SIZE)
 
-        self.btn_sync = wx.Button(self, label=_('Sync'), size=(100, 30))
+        # Make widgets
         self.btn_rem = wx.Button(self, label=_('Clean'), size=(100, 30))
         self.btn_add = wx.Button(self, label=_('Add'), size=(100, 30))
         self.btn_del = wx.Button(self, label=_('Delete'), size=(100, 30))
 
         # Bind events
-        self.Bind(wx.EVT_BUTTON, self.on_btn_sync, self.btn_sync)
         self.Bind(wx.EVT_BUTTON, self.on_btn_rem, self.btn_rem)
         self.Bind(wx.EVT_BUTTON, self.on_btn_add, self.btn_add)
         self.Bind(wx.EVT_BUTTON, self.on_btn_del, self.btn_del)
@@ -218,6 +217,10 @@ class LocalboxPanel(LoxPanel):
         self._main_syncing_thread = main_syncing_thread
         self.event = event
         self.ctrl = LocalboxListCtrl(self)
+
+        # Make widgets and bind events
+        self.btn_sync = wx.Button(self, label=_('Sync'), size=(100, 30))
+        self.Bind(wx.EVT_BUTTON, self.on_btn_sync, self.btn_sync)
 
         # Layout
         self._DoLayout()
@@ -281,6 +284,10 @@ class SharePanel(LoxPanel):
         self.ctrl = SharesListCtrl(self)
         self.ctrl_lox = SyncsController()
 
+        # Make widgets and bind events
+        self.btn_refresh = wx.Button(self, label=_('Refresh'), size=(100, 30))
+        self.Bind(wx.EVT_BUTTON, self.on_btn_refresh, self.btn_refresh)
+
         # Layout
         self._DoLayout()
 
@@ -298,7 +305,7 @@ class SharePanel(LoxPanel):
         vbox.Add((-1, 25))
 
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
-        hbox4.Add(self.btn_sync, 0, wx.EXPAND)
+        hbox4.Add(self.btn_refresh, 0, wx.EXPAND)
         hbox4.Add(self.btn_rem, 0, wx.EXPAND)
         hbox4.Add((0, 0), 1, wx.EXPAND)
         hbox4.Add(self.btn_add, 0, wx.EXPAND)
@@ -307,13 +314,13 @@ class SharePanel(LoxPanel):
 
         vbox.Add((-1, 25))
 
-        self.btn_sync.Enable(len(self.ctrl_lox) > 0)
+        self.btn_refresh.Enable(len(self.ctrl_lox) > 0)
         self.btn_add.Enable(len(self.ctrl_lox) > 0)
         self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
 
         self.SetSizer(vbox)
 
-    def on_btn_sync(self, wx_event):
+    def on_btn_refresh(self, wx_event):
         self.sync()
 
     def on_btn_add(self, wx_event):
@@ -339,7 +346,7 @@ class SharePanel(LoxPanel):
         worker = PopulateThread(self, self.ctrl.load)
         worker.start()
 
-        self.btn_sync.Enable(len(self.ctrl_lox) > 0)
+        self.btn_refresh.Enable(len(self.ctrl_lox) > 0)
         self.btn_add.Enable(len(self.ctrl_lox) > 0)
 
 class AccountPanel(wx.Panel):
