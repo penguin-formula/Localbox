@@ -21,6 +21,7 @@ function runLoxClient {
     elif [ $exec_mode = "per" ]; then
         # Assure these directories exist
         mkdir -p $loxclient_default_per/client_home/.config/localbox
+        mkdir -p $loxclient_default_per/client_home/.local/share
         mkdir -p $loxclient_default_per/client_directory
 
         sudo docker run \
