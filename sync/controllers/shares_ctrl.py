@@ -36,7 +36,7 @@ class SharesController(object):
         :return:
         """
         item = self._list[index]
-        localbox_client = LocalBox(url=item.url, label=item.label)
+        localbox_client = LocalBox(url=item.url, label=item.label, path=item.path)
         localbox_client.delete_share(item.id)
         sql = 'delete from keys where site = ? and user != ?'
         database_execute(sql, (item.label, item.user))

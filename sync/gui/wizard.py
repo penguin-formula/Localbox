@@ -126,37 +126,11 @@ class NewSyncInputsWizardPage(WizardPageSimple):
         url = self.url
         path = self.path
 
-<<<<<<< HEAD
         # Validate the inputs
         if not gui_utils.is_valid_input(label):
             gui_utils.show_error_dialog(message=_('%s is not a valid label') % label, title=_('Invalid Label'))
             event.Veto()
             return
-=======
-        if gui_utils.is_valid_input(label) and gui_utils.is_valid_input(url) and gui_utils.is_valid_input(path):
-            self.sync_item = SyncItem(label=label,
-                                      url=url,
-                                      path=path)
-
-            try:
-                self.parent.localbox_client = LocalBox(url, label, path)
-            except (URLError, BadStatusLine, ValueError,
-                    auth.AlreadyAuthenticatedError) as error:
-                getLogger(__name__).debug("error with authentication url thingie")
-                getLogger(__name__).exception(error)
-            except SocketError as e:
-                if e.errno != errno.ECONNRESET:
-                    raise  # Not error we are looking for
-                getLogger(__name__).error('Failed to connect to server, maybe forgot https? %s', e)
-
-            self.parent.box_label = label
-            self.parent.path = path
-
-            if not self.parent.localbox_client:
-                getLogger(__name__).error('%s is not a valid URL' % url)
-                gui_utils.show_error_dialog(message=_('%s is not a valid URL') % url, title=_('Invalid URL'))
-                event.Veto()
->>>>>>> feature/watchdog
 
         if not gui_utils.is_valid_input(url):
             gui_utils.show_error_dialog(message=_('%s is not a valid URL') % url, title=_('Invalid URL'))
@@ -196,7 +170,7 @@ class NewSyncInputsWizardPage(WizardPageSimple):
         # Create a localbox instance
         # TODO: Errors in here need to be clarified
         try:
-            self.parent.localbox_client = LocalBox(url, label)
+            self.parent.localbox_client = LocalBox(url, label, path)
 
         except (URLError, BadStatusLine, ValueError,
                 auth.AlreadyAuthenticatedError) as error:
