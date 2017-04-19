@@ -332,7 +332,6 @@ class SharePanel(LoxPanel):
 
         vbox.Add((-1, 25))
 
-        self.btn_refresh.Enable(len(self.ctrl_lox) > 0)
         self.btn_add.Enable(len(self.ctrl_lox) > 0)
         self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
         self.btn_edit.Enable(self.ctrl.GetSelectedItemCount() > 0)
@@ -359,10 +358,10 @@ class SharePanel(LoxPanel):
         ShareEditDialog(self, share)
 
     def _on_list_delete_item(self, wx_event):
-        self.btn_refresh.Enable(self.ctrl.GetItemCount() > 1)
+        pass
 
     def _on_list_insert_item(self, wx_event):
-        self.btn_refresh.Enable(self.ctrl.GetItemCount() > 0)
+        pass
 
     def on_show(self, wx_event=None):
         if self.IsShown():
