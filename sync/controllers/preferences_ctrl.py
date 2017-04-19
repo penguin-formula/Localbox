@@ -6,7 +6,7 @@ from os.path import exists
 from sync.language import LANGUAGES
 from logging import getLogger
 
-from sync.defaults import LOCALBOX_PREFERENCES_PATH, DEFAULT_LANGUAGE
+from sync.defaults import LOCALBOX_PREFERENCES_PATH, DEFAULT_LANGUAGE, APPDIR
 
 
 class PreferencesController(object):

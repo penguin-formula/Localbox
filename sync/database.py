@@ -128,7 +128,7 @@ def sqlite_execute(command, params=None):
         cursor = connection.cursor()
         if init_db:
             for sql in ('CREATE TABLE sites (site char(255), client_id'
-                        ' char(255), client_secret char(255), user char(255));',
+                        ' char(255), client_secret char(255), user char(255), token char(255));',
                         'CREATE TABLE keys (site char(255), user char(255),'
                         ' fingerprint char(40));'):
                 if sql != "" and sql is not None:

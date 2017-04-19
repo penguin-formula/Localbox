@@ -19,7 +19,7 @@ from sync.controllers.login_ctrl import LoginController
 from sync.defaults import LOCALBOX_SITES_PATH, OPEN_FILE_PORT
 from sync.gui.gui_wx import Gui, LocalBoxApp
 from sync.__version__ import VERSION_STRING
-from sync.localbox import LocalBox, remove_decrypted_files
+from sync.localbox import LocalBox
 import sync.controllers.openfiles_ctrl as openfiles_ctrl
 from loxcommon import os_utils
 from sync import defaults
@@ -49,12 +49,18 @@ class LocalBoxIcon(TaskBarIcon):
     """
     icon_path = None
 
-    def __init__(self, main_syncing_thread, sites=None):
+    def __init__(self, main_syncing_thread, sites=None, observers=None):
         TaskBarIcon.__init__(self)
         if sites is not None:
             self.sites = sites
         else:
             self.sites = []
+
+        if observers is not None:
+            self.observers = observers
+        else:
+            self.observers = []
+
         # The purpose of this 'frame' is to keep the mainloop of wx alive
         # (which checks for living wx thingies)
         self.frame = Gui(None, main_syncing_thread.waitevent, main_syncing_thread)
@@ -95,7 +101,7 @@ class LocalBoxIcon(TaskBarIcon):
         self._main_syncing_thread.stop()
 
     def delete_decrypted(self, event=None):
-        remove_decrypted_files()
+        openfiles_ctrl.remove_all()
 
     def create_popup_menu(self):
         """
@@ -157,6 +163,11 @@ class LocalBoxIcon(TaskBarIcon):
         """
         self.frame.Close()
         self.delete_decrypted()
+
+        for observer in self.observers:
+            observer.stop()
+            observer.join()
+
         self.Destroy()
 
         app = wx.GetApp()
@@ -294,7 +305,7 @@ def is_first_run():
     return not exists(LOCALBOX_SITES_PATH)
 
 
-def taskbarmain(main_syncing_thread, sites=None):
+def taskbarmain(main_syncing_thread, sites=None, observers=None):
     """
     main function to run to get the taskbar started
     """
@@ -302,7 +313,7 @@ def taskbarmain(main_syncing_thread, sites=None):
 
     start_open_file_server()
 
-    icon = LocalBoxIcon(main_syncing_thread, sites=sites)
+    icon = LocalBoxIcon(main_syncing_thread, sites=sites, observers=observers)
 
     if is_first_run():
         icon.start_gui(None)

@@ -8,6 +8,7 @@ from time import time
 from .database import database_execute
 from logging import getLogger
 from ssl import SSLContext  # pylint: disable=E0611
+
 try:
     from httplib import BadStatusLine
 except:
@@ -51,40 +52,52 @@ class Authenticator(object):
     class implementing the authentication code
     """
 
-    def __init__(self, authentication_url, label):
-        self.authentication_url = authentication_url
-        self.label = label
-        self.client_id = None
-        self.client_secret = None
-        self.access_token = None
-        self.expires = 0
-        self.scope = None
-        self.username = None
+    def __new__(cls, authentication_url, label):
+        if not hasattr(cls, 'instance'):
+            cls.instance = dict()
 
-        self.refresh_token = None
-        self.load_client_data()
+        if label not in cls.instance.keys():
+            cls.instance[label] = super(Authenticator, cls).__new__(cls, authentication_url, label)
+
+        return cls.instance[label]
+
+    def __init__(self, authentication_url, label):
+        if not hasattr(self, 'label'):
+            getLogger(__name__).debug('New authenticator for %s' % label)
+            self.authentication_url = authentication_url
+            self.label = label
+            self.client_id = None
+            self.client_secret = None
+            self.access_token = None
+            self.expires = 0
+            self.scope = None
+            self.username = None
+
+            self.refresh_token = None
+            self.load_client_data()
 
     def save_client_data(self):
         """
         Save the client credentials for the localbox identified by the label in
         the database
         """
-        sql = "insert into sites (site, user, client_id, client_secret) " \
-              "values (?, ?, ?, ?);"
+        sql = "insert into sites (site, user, client_id, client_secret, token) " \
+              "values (?, ?, ?, ?, ?);"
         database_execute(
-            sql, (self.label, self.username, self.client_id, self.client_secret))
+            sql, (self.label, self.username, self.client_id, self.client_secret, self.access_token))
 
     def load_client_data(self):
         """
         Get client data belonging to the localbox identified by label
         """
-        sql = "select client_id, client_secret, user from sites where site = ?;"
+        sql = "select client_id, client_secret, user, token from sites where site = ?;"
         result = database_execute(sql, (self.label,))
         if result != [] and result is not None:
             getLogger(__name__).debug("loading client data for label: %s" % self.label)
             self.client_id = result[0][0]
             self.client_secret = result[0][1]
             self.username = result[0][2]
+            self.access_token = result[0][3]
             return True
         return False
 
@@ -138,6 +151,7 @@ class Authenticator(object):
             raise AuthenticationError("Cannot authenticate on client c"
                                       "redentials without client_id an"
                                       "d client_secret")
+        getLogger(__name__).info('Authenticating client %s' % self.client_id)
         authdata = {'grant_type': 'client_credentials',
                     'client_id': self.client_id,
                     'client_secret': self.client_secret}
@@ -167,7 +181,7 @@ class Authenticator(object):
                 self.save_client_data()
                 return True
         except (HTTPError, URLError) as error:
-            if hasattr(error, 'code') and error.code != 401:   # HTTP Error 401: Unauthorized
+            if hasattr(error, 'code') and error.code != 401:  # HTTP Error 401: Unauthorized
                 raise error
         # clear credentials on failure
         self.client_id = None
@@ -204,6 +218,9 @@ class Authenticator(object):
             self.refresh_token = json.get('refresh_token')
             self.scope = json.get('scope')
             self.expires = time() + json.get('expires_in', 0) - EXPIRATION_LEEWAY
+
+            sql = 'update sites set token = ? where client_id = ?'
+            database_execute(sql, (self.access_token, self.client_id))
         except (HTTPError, URLError, BadStatusLine) as error:
             getLogger(__name__).debug('HTTPError when calling '
                                       'the authentication server')
@@ -222,9 +239,10 @@ class Authenticator(object):
         """
         if self.access_token is None and self.client_id is None and self.client_secret is None:
             raise AuthenticationError('Please authenticate with resource owner credentials first')
-        if time() > self.expires:
-            getLogger(__name__).debug("Token expired. Reauthenticating")
-            self.authenticate_with_client_secret()
+
+        sql = 'select token from sites where client_id = ?'
+        result = database_execute(sql, (self.client_id,))
+        self.access_token = result[0][0]
         return 'Bearer ' + self.access_token
 
 

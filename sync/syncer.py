@@ -33,6 +33,7 @@ from sync.localbox import LocalBox
 from sync.profiling import profile
 from .defaults import OLD_SYNC_STATUS
 from .metavfs import MetaVFS
+from .controllers import openfiles_ctrl
 
 
 class Syncer(object):
@@ -163,6 +164,17 @@ class Syncer(object):
         else:
             getLogger(__name__).error('Failed to download %s' % path)
 
+    @staticmethod
+    def _is_modified(filesystem_path):
+        new_hash = os_utils.hash_file(filesystem_path)
+        try:
+            is_modified = new_hash != openfiles_ctrl.load()[filesystem_path]
+        except KeyError:
+            is_modified = True
+
+        openfiles_ctrl.load()[filesystem_path] = new_hash
+        return is_modified
+
     @profile
     def syncsync(self):
         label = self.localbox.authenticator.label
@@ -232,11 +244,11 @@ class Syncer(object):
 
                 newest = MetaVFS.newest(localfile, remotefile)
 
-                localpath = self.get_file_path(metavfs)
-                if newest == localfile and os.path.exists(localpath):
-                    if not isdir(self.get_file_path(metavfs)):
-                        getLogger(__name__).info('Starting upload %s:  %s', path, localpath)
-                        self.localbox.upload_file(path, localpath, passphrase)
+                filesystem_path = self.get_file_path(metavfs)
+                if newest == localfile and os.path.exists(filesystem_path):
+                    if not isdir(filesystem_path) and Syncer._is_modified(filesystem_path):
+                        getLogger(__name__).info('Starting upload %s:  %s', path, filesystem_path)
+                        self.localbox.upload_file(path, filesystem_path, passphrase)
                     elif path != '/' and path not in self.localbox_metadata.get_paths():
                         self.localbox.create_directory(path)
                     continue
@@ -284,7 +296,6 @@ class SyncRunner(Thread):
     @property
     def name(self):
         return 'th-' + self.syncer.name
-
 
     @property
     def stop_event(self):
@@ -406,7 +417,7 @@ def get_syncers():
             path = sync_item.path
             direction = sync_item.direction
             label = sync_item.label
-            localbox_client = LocalBox(url, label)
+            localbox_client = LocalBox(url, label, path)
 
             syncer = Syncer(localbox_client, path, direction, name=sync_item.label)
             sites.append(syncer)

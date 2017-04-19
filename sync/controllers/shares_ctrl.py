@@ -12,6 +12,7 @@ except ImportError:
     from urllib.error import URLError  # pylint: disable=F0401,E0611
 
 
+# TODO: join this controller with sync controller
 class SharesController(object):
     def __new__(cls):
         if not hasattr(cls, 'instance'):
@@ -57,7 +58,7 @@ class SharesController(object):
         self._list = []
         for item in SyncsController().load():
             try:
-                localbox_client = LocalBox(url=item.url, label=item.label)
+                localbox_client = LocalBox(url=item.url, label=item.label, path=item.path)
 
                 for share in localbox_client.get_share_list(user=item.user):
                     share_item = ShareItem(user=share['user'],
@@ -79,6 +80,12 @@ class SharesController(object):
 
     def __len__(self):
         return self._list.__len__()
+
+    def __getitem__(self, index):
+        return self._list[index]
+
+    def __setitem__(self, index, value):
+        self._list[index] = value
 
 
 class ShareItem(object):
