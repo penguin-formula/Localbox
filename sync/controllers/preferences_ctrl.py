@@ -26,8 +26,11 @@ class PreferencesController(object):
     def save(self):
         getLogger(__name__).debug('Saving preferences: %s' % self._prefs)
 
-        with open(LOCALBOX_PREFERENCES_PATH, 'wb') as f:
-            pickle.dump(self._prefs, f)
+        try:
+            with open(LOCALBOX_PREFERENCES_PATH, 'wb') as f:
+                pickle.dump(self._prefs, f)
+        except IOError:
+            getLogger(__name__).warn('%s does not exist' % LOCALBOX_PREFERENCES_PATH)
 
     def load(self):
         getLogger(__name__).debug('Loading preferences: %s' % self._prefs)
