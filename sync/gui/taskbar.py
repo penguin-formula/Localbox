@@ -206,7 +206,7 @@ class OpenFileHandler(BaseHTTPRequestHandler):
         passphrase = LoginController().get_passphrase(data_dic["label"])
 
         # Stat local box instance
-        localbox_client = LocalBox(data_dic["url"], data_dic["label"])
+        localbox_client = LocalBox(data_dic["url"], data_dic["label"], "")
 
         # Attempt to decode the file
         try:
