@@ -6,7 +6,7 @@ from os.path import exists
 from sync.language import LANGUAGES
 from logging import getLogger
 
-from sync.defaults import LOCALBOX_PREFERENCES_PATH, DEFAULT_LANGUAGE
+from sync.defaults import LOCALBOX_PREFERENCES_PATH, DEFAULT_LANGUAGE, APPDIR
 
 
 class PreferencesController(object):
@@ -25,18 +25,22 @@ class PreferencesController(object):
 
     def save(self):
         getLogger(__name__).debug('Saving preferences: %s' % self._prefs)
-        if exists(LOCALBOX_PREFERENCES_PATH):
-            pickle.dump(self._prefs, open(LOCALBOX_PREFERENCES_PATH, 'wb'))
+
+        with open(LOCALBOX_PREFERENCES_PATH, 'wb') as f:
+            pickle.dump(self._prefs, f)
 
     def load(self):
         getLogger(__name__).debug('Loading preferences: %s' % self._prefs)
+
         try:
-            f = open(LOCALBOX_PREFERENCES_PATH, 'rb')
-            self._prefs = pickle.load(f)
+            with open(LOCALBOX_PREFERENCES_PATH, 'rb') as f:
+                self._prefs = pickle.load(f)
+
         except IOError:
             getLogger(__name__).warn('%s does not exist' % LOCALBOX_PREFERENCES_PATH)
             self.prefs.language = DEFAULT_LANGUAGE
             self.save()  # to disable the warning on the following runs
+
         return self._prefs
 
     @property

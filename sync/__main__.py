@@ -2,7 +2,11 @@
 main module for localbox sync
 """
 import os
+import pickle
 import signal
+import json
+import urllib
+import urllib2
 from logging import getLogger, ERROR
 from os import makedirs, mkdir
 from os.path import dirname, isdir, exists
@@ -15,14 +19,17 @@ from loxcommon.log import prepare_logging
 from loxcommon.os_utils import open_file_ext
 from sync import defaults
 from sync.controllers import openfiles_ctrl
-from sync.controllers.localbox_ctrl import ctrl as sync_ctrl
+from sync.controllers.localbox_ctrl import ctrl as sync_ctrl, SyncsController
 from sync.controllers.login_ctrl import LoginController
+from sync.database import database_execute, DatabaseError
+from sync.event_handler import create_watchdog
 from sync.gui import gui_utils
 from sync.gui import gui_wx
 from sync.gui.taskbar import taskbarmain
-from sync.localbox import LocalBox, remove_decrypted_files
+from sync.localbox import LocalBox
 from sync.syncer import MainSyncer
-from .defaults import LOG_PATH, APPDIR, SYNCINI_PATH
+from .defaults import LOG_PATH, APPDIR, SYNCINI_PATH, OPEN_FILE_PORT
+from .controllers import openfiles_ctrl as openfiles_ctrl
 
 try:
     from ConfigParser import ConfigParser, SafeConfigParser
@@ -38,7 +45,7 @@ except ImportError:
     raw_input = input  # pylint: disable=W0622,C0103
 
 
-def run_sync_daemon():
+def run_sync_daemon(observers=None):
     try:
         EVENT = Event()
         EVENT.clear()
@@ -46,9 +53,14 @@ def run_sync_daemon():
         MAIN = MainSyncer(EVENT)
         MAIN.start()
 
-        taskbarmain(MAIN)
+        taskbarmain(MAIN, observers)
     except Exception as error:  # pylint: disable=W0703
         getLogger(__name__).exception(error)
+
+
+def run_event_daemon():
+    for sync_item in SyncsController():
+        create_watchdog(sync_item)
 
 
 def run_file_decryption(filename):
@@ -66,7 +78,7 @@ def run_file_decryption(filename):
             if filename.startswith(sync_path):
                 localbox_filename = os_utils.remove_extension(filename.replace(sync_item.path, ''),
                                                               defaults.LOCALBOX_EXTENSION)
-                localbox_client = LocalBox(sync_item.url, sync_item.label)
+                localbox_client = LocalBox(sync_item.url, sync_item.label, sync_item.path)
                 break
 
         if not localbox_client or not localbox_filename:
@@ -75,52 +87,43 @@ def run_file_decryption(filename):
             getLogger(__name__).error('%s does not belong to any configured localbox' % filename)
             exit(1)
 
-        # get passphrase
-        label = localbox_client.authenticator.label
-        passphrase = LoginController().get_passphrase(label, remote=True)
-        if not passphrase:
-            gui_wx.ask_passphrase(localbox_client.username, label)
-            passphrase = LoginController().get_passphrase(label, remote=False)
-            if not passphrase:
-                gui_utils.show_error_dialog(_('Failed to get passphrase for label: %s.') % label, 'Error', True)
-                getLogger(__name__).error('failed to get passphrase for label: %s. Exiting..' % label)
-                exit(1)
+        # Request file to be opened
+        data_dic = {
+            "url": sync_item.url,
+            "label": localbox_client.authenticator.label,
+            "filename": filename,
+            "localbox_filename": localbox_filename
+        }
 
-        # decode file
-        try:
-            decoded_contents = localbox_client.decode_file(localbox_filename, filename, passphrase)
-        except URLError:
+        with open(OPEN_FILE_PORT, 'rb') as f:
+            port = pickle.load(f)
+
+        url = 'http://localhost:{}/open_file'.format(port)
+        data = json.dumps(data_dic)
+        req = urllib2.Request(url, data, {'Content-Type': 'application/json'})
+
+        answer = urllib2.urlopen(req)
+        res_code = answer.getcode()
+
+        # Open file and keep it in the open files list
+        if res_code == 200:
+            tmp_decoded_filename = answer.read()
+
+            open_file_ext(tmp_decoded_filename)
+
+            getLogger(__name__).info('Finished decrypting and opening file: %s', filename)
+
+        # The file may not exist, or something else might have gone wrong
+        elif res_code == 404:
             gui_utils.show_error_dialog(_('Failed to decode contents'), 'Error', standalone=True)
             getLogger(__name__).info('failed to decode contents. aborting')
-            return 1
-
-        # write file
-        tmp_decoded_filename = os_utils.remove_extension(filename, defaults.LOCALBOX_EXTENSION)
-        getLogger(__name__).info('tmp_decoded_filename: %s' % tmp_decoded_filename)
-
-        if os.path.exists(tmp_decoded_filename):
-            os.remove(tmp_decoded_filename)
-
-        localfile = open(tmp_decoded_filename, 'wb')
-        localfile.write(decoded_contents)
-        localfile.close()
-
-        # open file
-        open_file_ext(tmp_decoded_filename)
-
-        openfiles_ctrl.add(tmp_decoded_filename)
-
-        getLogger(__name__).info('Finished decrypting and opening file: %s', filename)
-
+            return
 
     except Exception as ex:
         getLogger(__name__).exception(ex)
 
 
 if __name__ == '__main__':
-    getLogger(__name__).info("LocalBox Sync Version: %s (%s)", sync.__version__.VERSION_STRING,
-                             sync.__version__.git_version)
-
     if not exists(APPDIR):
         mkdir(APPDIR)
 
@@ -137,13 +140,24 @@ if __name__ == '__main__':
     prepare_logging(configparser, log_path=LOG_PATH)
     getLogger('gnupg').setLevel(ERROR)
 
-    signal.signal(signal.SIGINT, remove_decrypted_files)
-    signal.signal(signal.SIGTERM, remove_decrypted_files)
+    getLogger(__name__).info("LocalBox Sync Version: %s (%s)", sync.__version__.VERSION_STRING,
+                             sync.__version__.git_version)
+
+    signal.signal(signal.SIGINT, openfiles_ctrl.remove_all)
+    signal.signal(signal.SIGTERM, openfiles_ctrl.remove_all)
     try:
         # only on Windows
-        signal.signal(signal.CTRL_C_EVENT, remove_decrypted_files)
+        signal.signal(signal.CTRL_C_EVENT, openfiles_ctrl.remove_all)
     except:
         pass
+
+    try:
+        sql = 'SELECT token FROM sites'
+        database_execute(sql)
+    except DatabaseError:
+        sql = 'ALTER TABLE sites ADD COLUMN TOKEN CHAR(255)'
+        database_execute(sql)
+        getLogger(__name__).debug('TOKEN column added to table SITES')
 
     if len(argv) > 1:
         filename = argv[1]
@@ -151,4 +165,5 @@ if __name__ == '__main__':
 
         run_file_decryption(filename)
     else:
+        run_event_daemon()
         run_sync_daemon()

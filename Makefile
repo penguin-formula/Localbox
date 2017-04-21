@@ -96,6 +96,7 @@ help:
 .PHONY: apidoc
 apidoc:
 	$(SPHINXAPIDOC) -o $(APIDOCDIR) sync
+	$(SPHINXAPIDOC) -o $(APIDOCDIR) tests
 
 diagrams:
 	chmod +x $(SCRIPT_DIA_EXPORT) && $(SCRIPT_DIA_EXPORT) $(DIAGRAMSDIR)

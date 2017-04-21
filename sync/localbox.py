@@ -3,21 +3,26 @@ localbox client library
 """
 
 import errno
-import os
-import re
 import hashlib
-from Crypto.Cipher.AES import MODE_CFB
-from Crypto.Cipher.AES import new as AES_Key
-from Crypto.Random import new as CryptoRandom
+import re
 from _ssl import PROTOCOL_TLSv1_2
 from base64 import b64decode
 from base64 import b64encode
+from json import dumps
+from json import loads
 from logging import getLogger
-from os import stat, remove
+from os import stat
 from socket import error as SocketError
+from ssl import SSLContext  # pylint: disable=E0611
 
+from Crypto.Cipher.AES import MODE_CFB
+from Crypto.Cipher.AES import new as AES_Key
+from Crypto.Random import new as CryptoRandom
+
+from loxcommon import os_utils
 from sync import defaults
 from sync.auth import Authenticator, AlreadyAuthenticatedError
+from sync.controllers.login_ctrl import LoginController
 from sync.gpg import gpg
 
 try:
@@ -37,10 +42,6 @@ except ImportError:
     from http.client import BadStatusLine  # pylint: disable=F0401,E0611
     from configparser import ConfigParser  # pylint: disable=F0401,E0611
 
-from json import loads
-from json import dumps
-from ssl import SSLContext  # pylint: disable=E0611
-
 
 def getChecksum(key):
     """
@@ -56,17 +57,18 @@ class LocalBox(object):
     object representing localbox
     """
 
-    def __init__(self, url, label):
+    def __init__(self, url, label, path):
         """
 
         :param url:
         :param label:
-        :param path: filesystem path for the LocalBox
+        :param path: filesystem path for the LocalBox, ex: /home/john/my_localbox
         """
         if url[-1] != '/':
             url += "/"
         self.url = url
         self.label = label
+        self.path = path
         self._authentication_url = None
         self._authentication_url = self.get_authentication_url()
         self._authenticator = Authenticator(self._authentication_url, label)
@@ -111,14 +113,29 @@ class LocalBox(object):
                         bearer = True
         raise AlreadyAuthenticatedError()
 
-    def _make_call(self, request):
+    def _make_call(self, request, retry_count=1):
         """
-        do the actual call to the server with authentication data
+        Do the actual call to the server with authentication data.
+
+        :param request:
+        :param retry_count: counts the amount of retries.
+        :return:
         """
-        request.add_header('Authorization',
-                           self.authenticator.get_authorization_header())
+        auth_header = self.authenticator.get_authorization_header()
+        getLogger(__name__).debug('_make_call: %s' % request.get_full_url())
+        getLogger(__name__).debug('_make_call auth header: %s' % auth_header)
+        request.add_header('Authorization', auth_header)
         non_verifying_context = SSLContext(PROTOCOL_TLSv1_2)
-        return urlopen(request, context=non_verifying_context)
+
+        try:
+            return urlopen(request, context=non_verifying_context)
+        except HTTPError as error:
+            if hasattr(error, 'code'):
+                if error.code == 401:
+                    if retry_count <= defaults.MAX_AUTH_RETRIES:
+                        self.authenticator.authenticate_with_client_secret()
+                        return self._make_call(request, retry_count + 1)
+            raise error
 
     def get_meta(self, path=''):
         """
@@ -153,32 +170,34 @@ class LocalBox(object):
 
     def create_directory(self, path):
         """
-        do the create directory call
+        Create the directory on the server.
+        This also creates stores the encryption keys, if the directory is "root parent".
+        "root parent" means that is a 1st level directory inside the user's localbox.
+
+        :param path:
+        :return: key, iv if directory is "root parent", else None
         """
+        getLogger(__name__).debug("Creating directory: %s" % path)
         metapath = urlencode({'path': path})
         request = Request(url=self.url + 'lox_api/operations/create_folder/',
                           data=metapath)
-
-        getLogger(__name__).debug("Creating directory: %s" % path)
         try:
             self._make_call(request)
-            if path.count('/') == 1:
-                create_key_and_iv(self, path)
+            return self.create_key_and_iv(path) if path.count('/') else None, None
         except HTTPError as error:
             getLogger(__name__).warning("'%s' whilst creating directory %s. %s", error, path, error.message)
-            # TODO: make directory encrypted
 
-    def delete(self, path):
+    def delete(self, localbox_path):
         """
         do the delete call
         """
-        metapath = urlencode({'path': path})
+        metapath = urlencode({'path': localbox_path})
         request = Request(url=self.url + 'lox_api/operations/delete/',
                           data=metapath)
         try:
             return self._make_call(request)
         except HTTPError:
-            getLogger(__name__).error("Error remote deleting '%s'", path)
+            getLogger(__name__).error("Error remote deleting '%s'", localbox_path)
 
     def delete_share(self, share_id):
         """
@@ -193,13 +212,14 @@ class LocalBox(object):
         except HTTPError:
             getLogger(__name__).error("Error remote deleting share '%d'", share_id)
 
-    def upload_file(self, path, fs_path, passphrase):
+    def upload_file(self, path, fs_path, passphrase, remove=True):
         """
         upload a file to localbox
 
         :param path: path relative to localbox location. eg: /some_folder/image.jpg
         :param fs_path: file system path. eg: /home/user/localbox/some_folder/image.jpg
         :param passphrase: used to encrypt file
+        :param remove: whether or not to remove the plain text file
         :return:
         """
         metapath = quote_plus(path)
@@ -224,7 +244,9 @@ class LocalBox(object):
             openfile.close()
 
             # remove plain file
-            remove(fs_path)
+            if remove:
+                getLogger(__name__).debug('Deleting old plain file: %s' % fs_path)
+                os_utils.shred(fs_path)
 
             # upload encrypted file
             getLogger(__name__).info("Uploading %s: Statsize: %d, readsize: %d cryptosize: %d",
@@ -236,9 +258,49 @@ class LocalBox(object):
             return self._make_call(request)
 
         except (BadStatusLine, HTTPError, OSError) as error:
-            getLogger(__name__).error('Failed to upload file: %s' % (path, error))
+            getLogger(__name__).error('Failed to upload file: %s, error=%s' % (path, error))
 
         return None
+
+    def _call_move(self, from_path, to_path):
+        """
+        Call the backend service to move files within the same "root" directory.
+
+        :param from_path:
+        :param to_path:
+        :return:
+        """
+        request = Request(url=self.url + 'lox_api/operations/move',
+                          data=dumps({
+                              'from_path': from_path,
+                              'to_path': to_path
+                          }))
+        try:
+            return self._make_call(request)
+        except HTTPError:
+            getLogger(__name__).error("Error remote moving file '%s' to'%s'", from_path, to_path)
+
+    def move_file(self, from_file, to_file, passphrase):
+        localbox_path_from_file = get_localbox_path(self.path, from_file[:-4])
+        localbox_path_to_file = get_localbox_path(self.path, to_file[:-4])
+
+        if os_utils.get_keys_path(localbox_path_from_file) == os_utils.get_keys_path(localbox_path_to_file):
+            self._call_move(localbox_path_from_file, localbox_path_to_file)
+        else:
+            # decrypt from_file
+            plain_contents = self.decode_file(localbox_path_from_file, to_file, passphrase)
+            if plain_contents:
+                f = open(to_file[:-4], 'wb')
+                f.write(plain_contents)
+                f.close()
+                # encrypt decrypted contents with the new location's key.
+                # upload new encrypted contents
+                self.upload_file(localbox_path_to_file, to_file[:-4], passphrase)
+
+                # remove old encrypted file
+                self.delete(localbox_path_from_file)
+            else:
+                getLogger(__name__).error("move %s failed. Contents weren't decoded successfully." % from_file)
 
     def call_user(self, send_data=None):
         """
@@ -249,18 +311,25 @@ class LocalBox(object):
             request = Request(url)
         else:
             request = Request(url, data=send_data)
-        return self._make_call(request)
+        try:
+            response = self._make_call(request).read()
+            json = loads(response)
+            return json
+        except HTTPError:
+            return {}
 
-    def call_keys(self, path, passphrase):
+    def call_keys(self, localbox_path, passphrase):
         """
-        do the keys call
+        Get the encrypted (key, iv) pair stored on the server.
 
         :return: the key for symmetric encryption in the form: (key, iv)
         """
+        if not passphrase:
+            raise InvalidPassphraseError
         pgp_client = gpg()
-        keys_path = LocalBox.get_keys_path(path)
+        keys_path = os_utils.get_keys_path(localbox_path)
         keys_path = quote_plus(keys_path)
-        getLogger(__name__).debug("call lox_api/key on path %s = %s", path, keys_path)
+        getLogger(__name__).debug("call lox_api/key on localbox_path %s = %s", localbox_path, keys_path)
 
         request = Request(url=self.url + 'lox_api/key/' + keys_path)
         result = self._make_call(request)
@@ -268,62 +337,9 @@ class LocalBox(object):
         key_data = loads(result.read())
         key = pgp_client.decrypt(b64decode(key_data['key']), passphrase)
         iv = pgp_client.decrypt(b64decode(key_data['iv']), passphrase)
-        getLogger(__name__).debug("Got key %s for path %s", getChecksum(key), path)
+        getLogger(__name__).debug("Got key %s for localbox_path %s", getChecksum(key), localbox_path)
 
         return key, iv
-
-    @staticmethod
-    def get_keys_path_v2(localbox_path):
-        """
-        Get the keys location for this localbox path.
-
-        >>> LocalBox.get_keys_path('/a/b/c')
-        'a/b'
-        >>> LocalBox.get_keys_path('a')
-        'a'
-        >>> LocalBox.get_keys_path('/a/b/c/')
-        'a/b/c'
-        >>> LocalBox.get_keys_path('a/b')
-        'a'
-
-        :param localbox_path:
-        :return: it returns the parent 'directory'
-        """
-        slash_count = localbox_path.count('/')
-        if slash_count > 1:
-            keys_path = os.path.dirname(localbox_path).lstrip('/')
-        elif slash_count == 1 and localbox_path.index('/') > 0:
-            keys_path = os.path.dirname(localbox_path).lstrip('/')
-        else:
-            keys_path = localbox_path
-
-        getLogger(__name__).debug('keys_path for localbox_path "%s" is "%s"' % (localbox_path, keys_path))
-        return keys_path
-
-    @staticmethod
-    def get_keys_path(localbox_path):
-        """
-        Get the keys location for this localbox path.
-
-        >>> LocalBox.get_keys_path('/a/b/c')
-        'a'
-        >>> LocalBox.get_keys_path('a')
-        'a'
-        >>> LocalBox.get_keys_path('/a/b/c/')
-        'a'
-        >>> LocalBox.get_keys_path('a/b')
-        'a'
-
-        :param localbox_path:
-        :return: it returns the parent 'directory'
-        """
-        if localbox_path.startswith('/'):
-            localbox_path = localbox_path[1:]
-
-        keys_path = localbox_path.split('/')[0]
-
-        getLogger(__name__).debug('keys_path for localbox_path "%s" is "%s"' % (localbox_path, keys_path))
-        return keys_path
 
     def get_all_users(self):
         """
@@ -333,7 +349,16 @@ class LocalBox(object):
         result = self._make_call(request).read()
         return loads(result)
 
-    def create_share(self, localbox_path, passphrase, user_list):
+    def get_identities(self, user_list=None):
+        """
+
+        """
+        data = dumps(user_list) if user_list is not None else None
+        request = Request(url=self.url + 'lox_api/identities', data=data)
+        result = self._make_call(request).read()
+        return loads(result)
+
+    def create_share(self, localbox_path, user_list):
         """
         Share directory with users.
 
@@ -348,34 +373,80 @@ class LocalBox(object):
 
         try:
             result = self._make_call(request).read()
-            key, iv = self.call_keys(localbox_path, passphrase)
 
-            # import public key in the user_list
-            for user in user_list:
-                public_key = user['public_key']
-                username = user['username']
-
-                gpg().add_public_key(self.label, username, public_key)
-                self.save_key(username, localbox_path, key, iv)
+            self._add_encryption_keys(localbox_path, user_list)
 
             return True
         except Exception as error:
             getLogger(__name__).exception(error)
             return False
 
+    def _add_encryption_keys(self, localbox_path, user_list):
+        if localbox_path.startswith('/'):
+            localbox_path = localbox_path[1:]
+        key, iv = self.call_keys(localbox_path, LoginController().get_passphrase(self.label))
+
+        # import public key in the user_list
+        for user in user_list:
+            public_key = user['public_key']
+            username = user['username']
+
+            gpg().add_public_key(self.label, username, public_key)
+            self.save_key(username, localbox_path, key, iv)
+
     def get_share_list(self, user):
         """
-        Share directory with users.
+        List shares of given user.
 
         :return: True if success, False otherwise
         """
         request = Request(url=self.url + 'lox_api/shares/user/' + user)
 
         try:
-            return loads(self._make_call(request).read())
+            result = self._make_call(request).read()
+            if result != '' and result is not None:
+                return loads(result)
+            else:
+                return []
         except Exception as error:
             getLogger(__name__).exception(error)
             return []
+
+    def get_share_user_list(self, share_id):
+        """
+        List users of a given share.
+
+        :return: List with the users if success, empty list otherwise
+        """
+        request = Request(url=self.url + 'lox_api/shares/' + str(share_id))
+
+        try:
+            result = self._make_call(request).read()
+            if result != '' and result is not None:
+                return loads(result)
+            else:
+                return []
+        except Exception as error:
+            getLogger(__name__).exception(error)
+            return []
+
+    def edit_share_users(self, share, user_list):
+        """
+        List users of a given share.
+
+        :return: True if success, False otherwise
+        """
+        request = Request(url=self.url + 'lox_api/shares/' + str(share.id) + '/edit',
+                          data=dumps(user_list))
+
+        try:
+            self._make_call(request).read()
+            user_list = self.get_identities(user_list)
+            self._add_encryption_keys(share.path, user_list)
+            return True
+        except Exception as error:
+            getLogger(__name__).exception(error)
+            return False
 
     def save_key(self, user, path, key, iv):
         """
@@ -388,8 +459,10 @@ class LocalBox(object):
         :param user:
         :return:
         """
-        cryptopath = LocalBox.get_keys_path(path)
+        cryptopath = os_utils.get_keys_path(path)
         cryptopath = quote_plus(cryptopath)
+
+        getLogger(__name__).debug('saving key for %s', cryptopath)
 
         site = self.authenticator.label
 
@@ -403,7 +476,6 @@ class LocalBox(object):
         request = Request(
             url=self.url + 'lox_api/key/' + cryptopath, data=data)
         result = self._make_call(request)
-        getLogger(__name__).debug('saving key for %s', cryptopath)
         # NOTE: this is just the result of the last call, not all of them.
         # should be more robust then this
         return result
@@ -414,7 +486,7 @@ class LocalBox(object):
         """
         try:
             path = path.replace('\\', '/')
-            key = get_aes_key(self, path, passphrase)
+            key = self.get_aes_key(path, passphrase)
 
             with open(filename, 'rb') as content_file:
                 contents = content_file.read()
@@ -428,7 +500,7 @@ class LocalBox(object):
         """
         encode a file
         """
-        key = get_aes_key(self, path, passphrase, should_create=True)
+        key = self.get_aes_key(path, passphrase)
         result = key.encrypt(contents)
         return result
 
@@ -448,51 +520,52 @@ class LocalBox(object):
             getLogger(__name__).error('Failed to connect to server, maybe forgot https? %s', e)
             return False
 
+    def create_key_and_iv(self, path):
+        getLogger(__name__).debug('Creating a key for path: %s', path)
+        key = CryptoRandom().read(32)
+        iv = CryptoRandom().read(16)
+        self.save_key(self.username, path, key, iv)
 
-def create_key_and_iv(localbox_client, path):
-    getLogger(__name__).debug('Creating a key for path: %s', path)
-    key = CryptoRandom().read(32)
-    iv = CryptoRandom().read(16)
-    localbox_client.save_key(localbox_client.username, path, key, iv)
+        return key, iv
 
-
-def get_aes_key(localbox_client, path, passphrase, should_create=False):
-    key = None
-    iv = None
-    try:
-        key, iv = localbox_client.call_keys(path, passphrase)
-    except (HTTPError, TypeError, ValueError):
-        if should_create:
-            getLogger(__name__).debug("path '%s' is without key, generating one.", path)
-            # generate keys if they don't exist
-            create_key_and_iv(localbox_client, path)
-        else:
+    def get_aes_key(self, path, passphrase):
+        try:
+            key, iv = self.call_keys(path, passphrase)
+        except (HTTPError, TypeError, ValueError):
             raise NoKeysFoundError(message='No keys found for %s' % path)
 
-    return AES_Key(key, MODE_CFB, iv, segment_size=128) if key else None
+        # TODO: use timed cache (see cachetools.TTLCache: https://pythonhosted.org/cachetools/)
+        return AES_Key(key, MODE_CFB, iv, segment_size=128) if key else None
 
 
 def get_localbox_path(localbox_location, filesystem_path):
     """
 
     >>> get_localbox_path('/home/wilson/localbox-users/wilson-90', '/home/wilson/localbox-users/wilson-90/other/inside/test.txt')
-    'other/inside/test.txt'
+    '/other/inside/test.txt'
     >>> get_localbox_path('C:\\Users\\Administrator\\Desktop\\mybox', 'C:\\Users\\Administrator\\Desktop\\mybox\\shared')
-    'shared'
+    '/shared'
 
 
     :param localbox_location:
     :param filesystem_path:
     :return:
     """
-    return re.sub(r'^/', '', filesystem_path.replace(localbox_location, '', 1).replace('\\', '/'))
+    return re.sub(defaults.LOCALBOX_EXTENSION + '$', '',
+                  filesystem_path.replace(localbox_location, '', 1).replace('\\', '/'))
 
 
 def remove_decrypted_files():
     import os, sync.controllers.openfiles_ctrl as ctrl
 
     getLogger(__name__).info('removing decrypted files')
-    for filename in ctrl.load():
+
+    files = ctrl.load()
+
+    if files is None:
+        return
+
+    for filename in files:
         try:
             os.remove(filename)
         except Exception as ex:
@@ -529,7 +602,8 @@ class InvalidLocalBoxPathError(Exception):
         return '%s is not a valid LocalBox path' % self.path
 
 
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()
+class InvalidPassphraseError(Exception):
+    """
+    Passphrase supplied is invalid.
+    """
+    pass

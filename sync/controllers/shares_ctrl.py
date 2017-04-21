@@ -12,6 +12,7 @@ except ImportError:
     from urllib.error import URLError  # pylint: disable=F0401,E0611
 
 
+# TODO: join this controller with sync controller
 class SharesController(object):
     def __new__(cls):
         if not hasattr(cls, 'instance'):
@@ -35,8 +36,7 @@ class SharesController(object):
         :return:
         """
         item = self._list[index]
-        localbox_client = LocalBox(url=item.url, label=item.label)
-        localbox_client.delete(item.path)
+        localbox_client = LocalBox(url=item.url, label=item.label, path=item.path)
         localbox_client.delete_share(item.id)
         sql = 'delete from keys where site = ? and user != ?'
         database_execute(sql, (item.label, item.user))
@@ -51,16 +51,20 @@ class SharesController(object):
         map(lambda i: self._list.remove(i), filter(lambda i: i.label == label, self._list))
 
     def save(self):
-        pickle.dump(self._list, open(LOCALBOX_SHARES_PATH, 'wb'))
+        with open(LOCALBOX_SHARES_PATH, 'wb') as f:
+            pickle.dump(self._list, f)
 
     def load(self):
         self._list = []
         for item in SyncsController().load():
             try:
-                localbox_client = LocalBox(url=item.url, label=item.label)
+                localbox_client = LocalBox(url=item.url, label=item.label, path=item.path)
 
                 for share in localbox_client.get_share_list(user=item.user):
-                    share_item = ShareItem(user=share['user'], path='/' + share['path'], url=item.url, label=item.label,
+                    share_item = ShareItem(user=share['user'],
+                                           path='/' + share['path'],
+                                           url=item.url,
+                                           label=item.label,
                                            id=share['id'])
                     self._list.append(share_item)
             except URLError:
@@ -70,6 +74,18 @@ class SharesController(object):
 
     def get_list(self):
         return self._list
+
+    def __iter__(self):
+        return self._list.__iter__()
+
+    def __len__(self):
+        return self._list.__len__()
+
+    def __getitem__(self, index):
+        return self._list[index]
+
+    def __setitem__(self, index, value):
+        self._list[index] = value
 
 
 class ShareItem(object):

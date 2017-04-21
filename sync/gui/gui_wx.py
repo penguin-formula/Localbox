@@ -1,7 +1,7 @@
-import pkg_resources
-import wx
-import wx.lib.mixins.listctrl as listmix
 from logging import getLogger
+from json import loads
+
+import wx
 
 from sync.controllers import localbox_ctrl
 from sync.controllers.account_ctrl import AccountController
@@ -16,7 +16,7 @@ from sync.gui.gui_utils import MAIN_FRAME_SIZE, MAIN_PANEL_SIZE, \
     MAIN_TITLE, DEFAULT_BORDER, PASSPHRASE_DIALOG_SIZE, PASSPHRASE_TITLE
 from sync.gui.wizard import NewSyncWizard
 from sync.language import LANGUAGES
-from sync.localbox import LocalBox, InvalidLocalBoxPathError, get_localbox_path
+from sync.localbox import LocalBox, InvalidLocalBoxPathError, get_localbox_path, remove_decrypted_files
 
 
 class LocalBoxApp(wx.App):
@@ -28,7 +28,7 @@ class LocalBoxApp(wx.App):
         """
         wx.App init function that returns False if the app is already running.
         """
-        self.name = "LocalBoxApp-%s".format(wx.GetUserId())
+        self.name = "LocalBoxApp-{}".format(wx.GetUserId())
         self.instance = wx.SingleInstanceChecker(self.name)
         if self.instance.IsAnotherRunning():
             wx.MessageBox(
@@ -51,7 +51,7 @@ class Gui(wx.Frame):
         self._main_syncing_thread = main_syncing_thread
         self.event = event
         self.toolbar_panels = dict()
-        self.panel_syncs = SyncsPanel(self, event, main_syncing_thread)
+        self.panel_syncs = LocalboxPanel(self, event, main_syncing_thread)
         self.panel_shares = SharePanel(self)
         self.panel_account = AccountPanel(self)
         self.panel_preferences = PreferencesPanel(self)
@@ -91,17 +91,24 @@ class Gui(wx.Frame):
 
         self.add_toolbar()
 
-        icon = wx.Icon()
-        icon.CopyFromBitmap(wx.Bitmap(gui_utils.iconpath(), wx.BITMAP_TYPE_ANY))
-        self.SetIcon(icon)
+        # icon = wx.Icon()
+        # icon.CopyFromBitmap(wx.Bitmap(gui_utils.iconpath(), wx.BITMAP_TYPE_ANY))
+        # self.SetIcon(icon)
 
     def on_close(self, event):
         self.Hide()
         event.Veto(True)
 
     def _create_toolbar_label(self, label, img):
-        return self.toolbar.AddCheckTool(wx.ID_ANY, label,
-                                              wx.Bitmap(gui_utils.images_path(img), wx.BITMAP_TYPE_ANY))
+        try:
+            return self.toolbar.AddCheckTool(wx.ID_ANY,
+                                             label,
+                                             wx.Bitmap(gui_utils.images_path(img), wx.BITMAP_TYPE_ANY))
+        except TypeError:
+            # wxPython 3.0.2
+            return self.toolbar.AddCheckLabelTool(wx.ID_ANY,
+                                                  label,
+                                                  wx.Bitmap(gui_utils.images_path(img), wx.BITMAP_TYPE_ANY))
 
     def add_toolbar(self):
         self.toolbar = self.CreateToolBar(style=wx.TB_TEXT)
@@ -175,27 +182,52 @@ class Gui(wx.Frame):
 # ----------------------------------- #
 # ----       MAIN PANELS         ---- #
 # ----------------------------------- #
-class SyncsPanel(wx.Panel):
+class LoxPanel(wx.Panel):
+    def __init__(self, parent=None, id=None, pos=None, size=None, style=None, name=None):
+        wx.Panel.__init__(self, parent, id=wx.ID_ANY, size=MAIN_PANEL_SIZE)
+
+        # Make widgets
+        self.btn_add = wx.Button(self, label=_('Add'), size=(100, 30))
+        self.btn_del = wx.Button(self, label=_('Delete'), size=(100, 30))
+
+        # Bind events
+        self.Bind(wx.EVT_BUTTON, self.on_btn_add, self.btn_add)
+        self.Bind(wx.EVT_BUTTON, self.on_btn_del, self.btn_del)
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_list_item_selected)
+        self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._on_list_item_deselected)
+
+    def _on_list_item_selected(self, wx_event):
+        self.btn_del.Enable(True)
+
+    def _on_list_item_deselected(self, wx_event):
+        self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
+
+
+class LocalboxPanel(LoxPanel):
     """
-    Custom Panel containing a ListCtrl to list the syncs/localboxes
+    Custom Panel containing a ListCtrl to list the localboxes
     """
 
     def __init__(self, parent, event, main_syncing_thread):
-        wx.Panel.__init__(self, parent, id=wx.ID_ANY, size=MAIN_PANEL_SIZE)
+        LoxPanel.__init__(self, parent, id=wx.ID_ANY, size=MAIN_PANEL_SIZE)
 
         # Attributes
         self._main_syncing_thread = main_syncing_thread
         self.event = event
         self.ctrl = LocalboxListCtrl(self)
-        self.btn_add_localbox = wx.Button(self, label=_('Add'), size=(70, 30))
-        self.btn_delete = wx.Button(self, label=_('Delete'), size=(70, 30))
+
+        # Make widgets
+        self.btn_sync = wx.Button(self, label=_('Sync'), size=(100, 30))
+        self.btn_rem = wx.Button(self, label=_('Clean'), size=(100, 30))
+
+        # Bind events
+        self.Bind(wx.EVT_BUTTON, self.on_btn_sync, self.btn_sync)
+        self.Bind(wx.EVT_BUTTON, self.on_btn_rem, self.btn_rem)
+        self.Bind(wx.EVT_LIST_DELETE_ITEM, self._on_list_delete_item)
+        self.Bind(wx.EVT_LIST_INSERT_ITEM, self._on_list_insert_item)
 
         # Layout
         self._DoLayout()
-
-        # Bind events
-        self.Bind(wx.EVT_BUTTON, self.newSyncDialog, self.btn_add_localbox)
-        self.Bind(wx.EVT_BUTTON, self.delete_localbox, self.btn_delete)
 
         # Setup
         self.ctrl.populate_list()
@@ -205,83 +237,160 @@ class SyncsPanel(wx.Panel):
 
         hbox3 = wx.BoxSizer(wx.HORIZONTAL)
         hbox3.Add(self.ctrl, proportion=1, flag=wx.EXPAND)
-        vbox.Add(hbox3, proportion=1, flag=wx.LEFT | wx.RIGHT | wx.EXPAND,
-                 border=10)
+        vbox.Add(hbox3, proportion=1, flag=wx.LEFT | wx.RIGHT | wx.EXPAND, border=10)
 
         vbox.Add((-1, 25))
 
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
-        hbox4.Add(self.btn_add_localbox)
-        hbox4.Add(self.btn_delete)
-        vbox.Add(hbox4, flag=wx.ALIGN_RIGHT | wx.RIGHT, border=10)
+        hbox4.Add(self.btn_sync, 0, wx.EXPAND)
+        hbox4.Add(self.btn_rem, 0, wx.EXPAND)
+        hbox4.Add((0, 0), 1, wx.EXPAND)
+        hbox4.Add(self.btn_add, 0, wx.EXPAND)
+        hbox4.Add(self.btn_del, 0, wx.EXPAND)
+        vbox.Add(hbox4, flag=wx.ALIGN_CENTER | wx.CENTER | wx.EXPAND | wx.EAST | wx.WEST, border=10)
 
         vbox.Add((-1, 25))
 
         self.SetSizer(vbox)
 
-    def newSyncDialog(self, wx_event):
+        self.btn_sync.Enable(False)
+        self.btn_del.Enable(False)
+
+    def on_btn_sync(self, wx_event):
+        labels_to_sync = self.ctrl.selected()
+        self._main_syncing_thread.sync(labels_to_sync)
+
+    def on_btn_rem(self, wx_event):
+        remove_decrypted_files()
+
+    def on_btn_add(self, wx_event):
         NewSyncWizard(self.ctrl, self.event)
 
-    def delete_localbox(self, wx_event):
+    def on_btn_del(self, wx_event):
+        """
+        Callback responsible for deleting the configuration of the selected localboxes.
+        It also stops the syncing thread for each label.
+
+        :param wx_event:
+        :return: None
+        """
         map(lambda l: self._main_syncing_thread.stop(l), self.ctrl.delete())
 
+    def _on_list_delete_item(self, wx_event):
+        self.btn_sync.Enable(self.ctrl.GetItemCount() > 1)
 
-class SharePanel(wx.Panel):
+    def _on_list_insert_item(self, wx_event):
+        self.btn_sync.Enable(self.ctrl.GetItemCount() > 0)
+
+
+class SharePanel(LoxPanel):
     """
     """
 
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, id=wx.ID_ANY, size=MAIN_PANEL_SIZE)
+        LoxPanel.__init__(self, parent, id=wx.ID_ANY, size=MAIN_PANEL_SIZE)
 
         # Attributes
         self.ctrl = SharesListCtrl(self)
-        self.btn_add = wx.Button(self, label=_('Add'), size=(70, 30))
-        self.btn_delete = wx.Button(self, label=_('Delete'), size=(70, 30))
+        self.ctrl_lox = SyncsController()
+
+        # Make widgets
+        self.btn_refresh = wx.Button(self, label=_('Refresh'), size=(100, 30))
+        self.btn_edit = wx.Button(self, label=_('Edit'), size=(100, 30))
+
+        self.btn_edit.Enable(False)
+
+        # Bind events
+        self.Bind(wx.EVT_BUTTON, self.on_btn_refresh, self.btn_refresh)
+        self.Bind(wx.EVT_LIST_DELETE_ITEM, self._on_list_delete_item)
+        self.Bind(wx.EVT_LIST_INSERT_ITEM, self._on_list_insert_item)
 
         # Layout
         self._DoLayout()
 
         # Bind events
-        self.Bind(wx.EVT_BUTTON, self.create_share, self.btn_add)
-        self.Bind(wx.EVT_BUTTON, self.delete_share, self.btn_delete)
         self.Bind(wx.EVT_SHOW, self.on_show)
         self.Bind(EVT_POPULATE, self.on_populate)
+        self.Bind(wx.EVT_BUTTON, self.on_btn_edit, self.btn_edit)
 
     def _DoLayout(self):
         vbox = wx.BoxSizer(wx.VERTICAL)
 
         hbox3 = wx.BoxSizer(wx.HORIZONTAL)
         hbox3.Add(self.ctrl, proportion=1, flag=wx.EXPAND)
-        vbox.Add(hbox3, proportion=1, flag=wx.LEFT | wx.RIGHT | wx.EXPAND,
-                 border=10)
+        vbox.Add(hbox3, proportion=1, flag=wx.LEFT | wx.RIGHT | wx.EXPAND, border=10)
 
         vbox.Add((-1, 25))
 
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
-        hbox4.Add(self.btn_add)
-        hbox4.Add(self.btn_delete)
-        vbox.Add(hbox4, flag=wx.ALIGN_RIGHT | wx.RIGHT, border=10)
+        hbox4.Add(self.btn_refresh, 0, wx.EXPAND)
+        hbox4.Add((0, 0), 1, wx.EXPAND)
+        hbox4.Add(self.btn_add, 0, wx.EXPAND)
+        hbox4.Add(self.btn_del, 0, wx.EXPAND)
+        hbox4.Add(self.btn_edit, 0, wx.EXPAND)
+        vbox.Add(hbox4, flag=wx.ALIGN_CENTER | wx.CENTER | wx.EXPAND | wx.EAST | wx.WEST, border=10)
 
         vbox.Add((-1, 25))
 
+        self.btn_add.Enable(len(self.ctrl_lox) > 0)
+        self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
+        self.btn_edit.Enable(self.ctrl.GetSelectedItemCount() > 0)
+
         self.SetSizer(vbox)
 
-    def create_share(self, wx_event):
+    def on_btn_refresh(self, wx_event):
+        self.sync()
+
+    def on_btn_add(self, wx_event):
         NewShareDialog(self, self.ctrl)
 
-    def delete_share(self, wx_event):
-        question = _('This will also delete the directory in your LocalBox and for all users. Continue?')
-        if gui_utils.show_confirm_dialog(self, question):
-            self.ctrl.delete()
+    def on_btn_del(self, wx_event):
+        self.ctrl.delete()
+        # question = _('This will also delete the directory in your LocalBox and for all users. Continue?')
+        # if gui_utils.show_confirm_dialog(self, question):
+
+    def on_btn_edit(self, wx_event):
+        share = None
+        for row in range(self.ctrl.GetItemCount()):
+            if self.ctrl.IsSelected(row):
+                share = self.ctrl.list[row]
+                break
+        ShareEditDialog(self, share)
+
+    def _on_list_delete_item(self, wx_event):
+        pass
+
+    def _on_list_insert_item(self, wx_event):
+        pass
 
     def on_show(self, wx_event=None):
         if self.IsShown():
-            worker = PopulateThread(self, self.ctrl.load)
-            worker.start()
+            self.sync()
 
     def on_populate(self, wx_event):
         self.ctrl.populate(wx_event.get_value())
+        self.btn_del.Enable(self.ctrl.GetSelectedItemCount() > 0)
+        self.btn_edit.Enable(self.ctrl.GetSelectedItemCount() > 0)
 
+    def _on_list_item_deselected(self, wx_event):
+        super(SharePanel, self)._on_list_item_deselected(wx_event)
+        self.btn_edit.Enable(self.ctrl.GetSelectedItemCount() > 0)
+
+    def _on_list_item_selected(self, wx_event):
+        super(SharePanel, self)._on_list_item_selected(wx_event)
+
+        # Enable edit button
+        user = localbox_ctrl.ctrl.get(self.ctrl.GetItem(self.ctrl.GetFirstSelected()).Text).user
+        owner = self.ctrl.ctrl[self.ctrl.GetFirstSelected()].user
+        self.btn_edit.Enable(self.ctrl.SelectedItemCount == 1 and owner == user)
+
+
+    def sync(self):
+        worker = PopulateThread(self, self.ctrl.load)
+        worker.start()
+
+        self.btn_refresh.Enable(len(self.ctrl_lox) > 0)
+        self.btn_add.Enable(len(self.ctrl_lox) > 0)
 
 class AccountPanel(wx.Panel):
     """
@@ -448,7 +557,8 @@ class NewSharePanel(wx.Panel):
         # Attributes
         self.parent = parent
 
-        self.list = UserListCtrl(self, style=wx.LC_REPORT)
+        self.users = None
+        self.list = wx.CheckListBox(self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize)
         self._selected_dir = wx.TextCtrl(self, style=wx.TE_READONLY)
         self.btn_select_dir = wx.Button(self, label=_('Select'), size=(95, 30))
         self.btn_select_dir.Disable()
@@ -498,17 +608,15 @@ class NewSharePanel(wx.Panel):
         path = self._selected_dir.GetValue()
         lox_label = self.choice.GetString(self.choice.GetSelection())
 
-        if gui_utils.is_valid_input(path) and self.list.GetSelectedItemCount() > 0:
-            user_list = self.list.get_users()
+        user_list = filter(lambda x: x['username'] in self.list.CheckedStrings, self.users)
+        if gui_utils.is_valid_input(path) and len(user_list) > 0:
             share_path = path.replace(self.localbox_path, '', 1)
 
             if self.localbox_client.create_share(localbox_path=share_path,
-                                                 passphrase=LoginController().get_passphrase(
-                                                     self.localbox_client.label),
                                                  user_list=user_list):
-                item = ShareItem(user=self.localbox_client.username, path=share_path, url=self.localbox_client.url,
-                                 label=lox_label)
-                SharesController().add(item)
+                ShareItem(user=self.localbox_client.username, path=share_path, url=self.localbox_client.url,
+                          label=lox_label)
+                SharesController().load()  # force load to get the ids from the server
                 self.parent.ctrl.populate(SharesController().get_list())
             else:
                 gui_utils.show_error_dialog(_('Server error creating the share'), _('Error'))
@@ -519,6 +627,7 @@ class NewSharePanel(wx.Panel):
 
     def OnChoice(self, event):
         self.btn_select_dir.Enable()
+        self.list.Clear()
         worker = PopulateThread(self, self.localbox_client.get_all_users)
         worker.start()
 
@@ -527,22 +636,29 @@ class NewSharePanel(wx.Panel):
             path = gui_utils.select_directory(cwd=self.localbox_path)
             if path:
                 path = get_localbox_path(SyncsController().get(self.selected_localbox).path, path)
-                # get meta to verify if path is a valid LocalBox path
-                # this will later problems, because for the sharing to work the files must exist in the server
-                self.localbox_client.get_meta(path)
-                self._selected_dir.SetValue(path)
+                if path.count('/') < 2:
+                    # get meta to verify if path is a valid LocalBox path
+                    # this will later problems, because for the sharing to work the files must exist in the server
+                    self.localbox_client.get_meta(path)
+                    self._selected_dir.SetValue(path)
+                else:
+                    gui_utils.show_error_dialog(_('Can only create share for root directories'), _('Error'))
+                    return
+
         except InvalidLocalBoxPathError:
             gui_utils.show_error_dialog(_(
                 'Invalid LocalBox path. Please make sure that you are selecting a directory inside LocalBox and '
                 'that the directory has been uploaded. Or try a different directory.'), 'Error')
 
     def on_populate(self, wx_event):
-        self.list.populate(filter(lambda u: u['username'] != self.localbox_client.username, wx_event.get_value()))
+        self.users = wx_event.get_value()
+        map(lambda x: self.list.Append(x['username']),
+            filter(lambda u: u['username'] != self.localbox_client.username, self.users))
 
     @property
     def localbox_client(self):
         localbox_item = localbox_ctrl.ctrl.get(self.selected_localbox)
-        return LocalBox(url=localbox_item.url, label=localbox_item.label)
+        return LocalBox(url=localbox_item.url, label=localbox_item.label, path=localbox_item.path)
 
     @property
     def localbox_path(self):
@@ -551,6 +667,159 @@ class NewSharePanel(wx.Panel):
     @property
     def selected_localbox(self):
         return self.choice.GetString(self.choice.GetSelection())
+
+
+class ShareEditPanel(wx.Panel):
+    def __init__(self, parent, share):
+        super(ShareEditPanel, self).__init__(parent=parent)
+
+        # Attributes
+        self.parent = parent
+        self.share = share
+
+        self.list = wx.CheckListBox(self, wx.ID_ANY, wx.DefaultPosition,
+                                    size=(self.GetSize()[0], 280))  # wx.DefaultSize)
+        self._selected_dir = wx.TextCtrl(self, style=wx.TE_READONLY)
+
+        self._btn_ok = wx.Button(self, id=wx.ID_OK, label=_('Ok'))
+        self._btn_close = wx.Button(self, id=wx.ID_CLOSE, label=_('Close'))
+        self._btn_remove = wx.Button(self, id=wx.ID_REMOVE, label=_('Remove'))
+        self._btn_add = wx.Button(self, id=wx.ID_ADD, label=_('Add'))
+
+        self._btn_remove.Enable(False)
+        # Layout
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer_sel_dir = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(wx.StaticText(self, label=_('Share:')), 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
+        self._selected_dir.SetValue(self.share.path)
+        sizer_sel_dir.Add(self._selected_dir, 1)
+        sizer.Add(sizer_sel_dir, 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
+        sizer.Add(wx.StaticText(self, label=_('You are sharing with:')), 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
+        sizer.Add(self.list, proportion=1, flag=wx.EXPAND | wx.ALL, border=DEFAULT_BORDER)
+
+        sizer_list_actions = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_list_actions.Add(self._btn_remove)
+        sizer_list_actions.Add(self._btn_add)
+        sizer.Add(sizer_list_actions, proportion=1, flag=wx.EXPAND | wx.ALL,
+                  border=DEFAULT_BORDER)
+
+        btn_szr = wx.StdDialogButtonSizer()
+
+        btn_szr.AddButton(self._btn_ok)
+        btn_szr.AddButton(self._btn_close)
+
+        btn_szr.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(sizer, 1, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
+        main_sizer.Add(wx.StaticLine(self, -1), 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
+        main_sizer.Add(btn_szr, border=DEFAULT_BORDER)
+        main_sizer.Add(wx.StaticText(self, label=''), 0, wx.ALL | wx.EXPAND)
+
+        # Event Handlers
+        self.Bind(wx.EVT_BUTTON, self.OnClickOk, id=self._btn_ok.Id)
+        self.Bind(wx.EVT_BUTTON, self.OnClickClose, id=self._btn_close.Id)
+        self.Bind(wx.EVT_BUTTON, self.on_click_remove, id=self._btn_remove.Id)
+        self.Bind(wx.EVT_BUTTON, self.on_click_add, id=self._btn_add.Id)
+        self.Bind(wx.EVT_CHECKLISTBOX, self.on_check, id=self.list.Id)
+
+        self.SetSizer(main_sizer)
+
+        self.on_populate()
+
+    def OnClickOk(self, event):
+        self.parent.OnClickClose(event)
+
+    def OnClickClose(self, event):
+        self.parent.OnClickClose(event)
+
+    def on_click_remove(self, wx_event):
+        user_list = filter(lambda x: x not in self.list.CheckedStrings, self.list.Strings)
+        self.localbox_client.edit_share_users(self.share, user_list)
+        self.on_populate()
+
+    def on_click_add(self, wx_event):
+        user_list = self.list.Strings
+        ShareAddUserDialog(self, self.share, user_list)
+
+    def on_check(self, wx_event):
+        self._btn_remove.Enable(len(self.list.CheckedStrings) > 0)
+
+    def on_populate(self):
+        self.list.Clear()
+        result = self.localbox_client.get_share_user_list(self.share.id)
+        lst = result["receivers"]
+        map(lambda x: self.list.Append(x['username']), lst)
+
+    @property
+    def localbox_client(self):
+        localbox_item = localbox_ctrl.ctrl.get(self.share.label)
+        return LocalBox(url=localbox_item.url, label=localbox_item.label, path=localbox_item.path)
+
+
+class ShareAddUserPanel(wx.Panel):
+    def __init__(self, parent, share, current_share_users):
+        super(ShareAddUserPanel, self).__init__(parent=parent)
+
+        # Attributes
+        self.parent = parent
+        self.share = share
+        self.current_share_users = current_share_users
+
+        self.list = wx.CheckListBox(self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize)
+
+        self._btn_ok = wx.Button(self, id=wx.ID_OK, label=_('Ok'))
+        self._btn_close = wx.Button(self, id=wx.ID_CLOSE, label=_('Close'))
+
+        # Layout
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(wx.StaticText(self, label=_('Choose users to add to the share:')), 0, wx.ALL | wx.EXPAND,
+                  border=DEFAULT_BORDER)
+        sizer.Add(self.list, proportion=1, flag=wx.EXPAND | wx.ALL, border=DEFAULT_BORDER)
+
+        btn_szr = wx.StdDialogButtonSizer()
+
+        btn_szr.AddButton(self._btn_ok)
+        btn_szr.AddButton(self._btn_close)
+
+        btn_szr.Realize()
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(sizer, 1, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
+        main_sizer.Add(wx.StaticLine(self, -1), 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
+        main_sizer.Add(btn_szr, border=DEFAULT_BORDER)
+        main_sizer.Add(wx.StaticText(self, label=''), 0, wx.ALL | wx.EXPAND)
+
+        # Event Handlers
+        self.Bind(wx.EVT_BUTTON, self.OnClickOk, id=self._btn_ok.Id)
+        self.Bind(wx.EVT_BUTTON, self.OnClickClose, id=self._btn_close.Id)
+
+        self.SetSizer(main_sizer)
+
+        self.on_populate()
+
+    def OnClickOk(self, event):
+        if len(self.list.CheckedStrings) > 0:
+            users = list(set(self.list.CheckedStrings).union(set(self.current_share_users)))
+            self.localbox_client.edit_share_users(self.share, users)
+        self.parent.OnClickClose(event)
+
+    def OnClickClose(self, event):
+        self.parent.OnClickClose(event)
+
+    def on_populate(self):
+        self.list.Clear()
+        result = self.localbox_client.get_all_users()
+        all_users = [u['username'] for u in result]
+        user = localbox_ctrl.ctrl.get(self.share.label).user
+        map(lambda x: self.list.Append(x),
+            filter(lambda x: x != user,
+                   set(all_users).difference(set(self.current_share_users))))
+
+    @property
+    def localbox_client(self):
+        localbox_item = localbox_ctrl.ctrl.get(self.share.label)
+        return LocalBox(url=localbox_item.url, label=localbox_item.label, path=localbox_item.path)
 
 
 class PasshphrasePanel(wx.Panel):
@@ -649,12 +918,29 @@ class LocalboxListCtrl(wx.ListCtrl):
         for item in self.ctrl.load():
             self.Append((item.label, item.path, item.url))
 
+    def selected(self):
+        idx = 0
+        prev = -1
+        labels_selected = []
+
+        for i in range(self.GetSelectedItemCount()):
+            idx = self.GetNextSelected(prev)
+            labels_selected.append(self.ctrl.getLabel(idx))
+            prev = idx
+
+        return labels_selected
+
     def add(self, item):
         getLogger(__name__).debug('%s: Add item %s' % (self.__class__.__name__, item))
         self.Append((item.label, item.path, item.url))
         self.ctrl.add(item)
 
     def delete(self):
+        """
+        Delete the configuration for the selected localboxes.
+
+        :return: the list with the labels of localboxes deleted.
+        """
         idx = 0
         labels_removed = []
         while idx > -1:
@@ -680,11 +966,10 @@ class LoxListCtrl(wx.ListCtrl):
     """
     This class behaves like a bridge between the GUI components and the real controller.
     """
+    list = None
 
     def __init__(self, parent, ctrl):
-        super(LoxListCtrl, self).__init__(parent,
-                                          style=wx.LC_REPORT)
-
+        wx.ListCtrl.__init__(self, parent, style=wx.LC_REPORT)
         self.ctrl = ctrl
 
     def delete(self):
@@ -708,6 +993,7 @@ class LoxListCtrl(wx.ListCtrl):
 
     def populate(self, lst=None):
         self.DeleteAllItems()
+        self.list = lst
 
     def load(self):
         return self.ctrl.load()
@@ -723,7 +1009,7 @@ class SharesListCtrl(LoxListCtrl):
         super(SharesListCtrl, self).__init__(parent, SharesController())
 
         self.InsertColumn(0, _("Label"))
-        self.InsertColumn(1, _("User"))
+        self.InsertColumn(1, _("Owner"))
         self.InsertColumn(2, _("Path"))
         self.InsertColumn(3, _("URL"))
 
@@ -733,49 +1019,8 @@ class SharesListCtrl(LoxListCtrl):
         self.SetColumnWidth(3, 400)
 
     def populate(self, lst=None):
-        super(SharesListCtrl, self).populate()
+        super(SharesListCtrl, self).populate(lst)
         map(lambda i: self.Append([i.label, i.user, i.path, i.url]), lst)
-
-
-class UserListCtrl(listmix.CheckListCtrlMixin, listmix.ListCtrlAutoWidthMixin, LoxListCtrl):
-    def __init__(self, *args, **kwargs):
-        LoxListCtrl.__init__(self, args[0], ctrl=None)
-        listmix.CheckListCtrlMixin.__init__(self)
-        listmix.ListCtrlAutoWidthMixin.__init__(self)
-
-        self.parent = args[0]
-
-        self.setResizeColumn(2)
-
-        self.InsertColumn(0, "No.")
-        self.InsertColumn(1, "Username")
-
-        self.Arrange()
-
-    def GetSelectedItemCount(self):
-        count = 0
-        for i in range(0, self.GetItemCount()):
-            if self.IsChecked(i):
-                count += 1
-
-        return count
-
-    def populate(self, lst=None):
-        super(UserListCtrl, self).populate()
-        map(lambda u: self.Append(["", u['username']]), lst)
-        self.users = lst
-
-    def get_users(self):
-        """
-        Get the list of users to send the invite to
-        :return:
-        """
-        result = list()
-        for i in range(0, self.GetItemCount()):
-            if self.IsChecked(i):
-                result.append(self.users[i])
-
-        return result
 
 
 # ----------------------------------- #
@@ -852,6 +1097,60 @@ class NewShareDialog(wx.Dialog):
         self.Show()
 
     def OnClickClose(self, wx_event):
+        self.Destroy()
+
+
+class ShareEditDialog(wx.Dialog):
+    def __init__(self, parent, share):
+        super(ShareEditDialog, self).__init__(parent=parent,
+                                              title=_('Edit Share'),
+                                              size=(500, 700),
+                                              style=wx.CLOSE_BOX | wx.CAPTION)
+
+        # Attributes
+        self.panel = ShareEditPanel(self, share=share)
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.InitUI()
+
+        self.Bind(wx.EVT_CLOSE, self.OnClickClose)
+
+    def InitUI(self):
+        self.main_sizer.Add(self.panel)
+
+        self.Layout()
+        self.Center()
+        self.Show()
+
+    def OnClickClose(self, wx_event):
+        self.Destroy()
+
+
+class ShareAddUserDialog(wx.Dialog):
+    def __init__(self, parent, share, current_share_users):
+        super(ShareAddUserDialog, self).__init__(parent=parent,
+                                                 title=_('Add User to Share'),
+                                                 size=(500, 600),
+                                                 style=wx.CLOSE_BOX | wx.CAPTION)
+
+        # Attributes
+        self.panel = ShareAddUserPanel(self, share=share, current_share_users=current_share_users)
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.parent = parent
+
+        self.InitUI()
+
+        self.Bind(wx.EVT_CLOSE, self.OnClickClose)
+
+    def InitUI(self):
+        self.main_sizer.Add(self.panel)
+
+        self.Layout()
+        self.Center()
+        self.Show()
+
+    def OnClickClose(self, wx_event):
+        self.parent.on_populate()
         self.Destroy()
 
 

@@ -7,7 +7,7 @@ This client allows you to configure localboxes on your machine and synchronize t
 
 Why?
 ====
-* Provide solution to cloud store with both client and server encryption
+* Cloud storage with both client and server encryption
 * Privacy
 * Secure Confidential Data
 * Constant Auditing

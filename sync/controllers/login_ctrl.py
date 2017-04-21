@@ -49,7 +49,7 @@ class LoginController(object):
             self._passphrase[site] = passphrase
         return result
 
-    def get_passphrase(self, label, remote=False):
+    def get_passphrase(self, label):
         """
         Get passphrase from memory.
 
@@ -57,23 +57,11 @@ class LoginController(object):
         :param remote: if True and passphrase does not exist, try to via HTTP (localhost)
         :return:
         """
-        if remote:
-            try:
-                # TODO: prop for URL
-                passphrase_server_url = 'http://localhost:9090/%s' % label
-                passphrase = urllib.urlopen(passphrase_server_url).read()
-                getLogger(__name__).debug('got passphrase %s' % passphrase)
 
-                return passphrase
-            except urllib.URLError:
-                getLogger(__name__).error('Sync client is not running. Failed to get passphrase from client.')
-
-                return None
-        else:
-            try:
-                return self._passphrase[label]
-            except KeyError:
-                return None
+        try:
+            return self._passphrase[label]
+        except KeyError:
+            return None
 
     def store_passphrase(self, passphrase, label, user):
         if gpg().is_passphrase_valid(passphrase=passphrase,
