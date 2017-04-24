@@ -9,6 +9,7 @@ from sync.controllers.localbox_ctrl import SyncsController, get_localbox_list
 from sync.controllers.login_ctrl import LoginController, InvalidPassphraseError
 from sync.controllers.preferences_ctrl import ctrl as preferences_ctrl
 from sync.controllers.shares_ctrl import SharesController, ShareItem
+import sync.controllers.openfiles_ctrl as openfiles_ctrl
 from sync.defaults import DEFAULT_LANGUAGE
 from sync.gui import gui_utils
 from sync.gui.event import EVT_POPULATE, PopulateThread
@@ -225,12 +226,15 @@ class LocalboxPanel(LoxPanel):
         self.Bind(wx.EVT_BUTTON, self.on_btn_rem, self.btn_rem)
         self.Bind(wx.EVT_LIST_DELETE_ITEM, self._on_list_delete_item)
         self.Bind(wx.EVT_LIST_INSERT_ITEM, self._on_list_insert_item)
+        self.Bind(wx.EVT_SHOW, self.on_show)
 
         # Layout
         self._DoLayout()
 
         # Setup
         self.ctrl.populate_list()
+
+        self.refresh()
 
     def _DoLayout(self):
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -253,8 +257,12 @@ class LocalboxPanel(LoxPanel):
 
         self.SetSizer(vbox)
 
-        self.btn_sync.Enable(False)
+        # FIXME:
+        # self.btn_rem.Enable(False)
         self.btn_del.Enable(False)
+
+        self.refresh()
+
 
     def on_btn_sync(self, wx_event):
         labels_to_sync = self.ctrl.selected()
@@ -280,6 +288,24 @@ class LocalboxPanel(LoxPanel):
         self.btn_sync.Enable(self.ctrl.GetItemCount() > 1)
 
     def _on_list_insert_item(self, wx_event):
+        # On windows, the event which triggers this method happens before the
+        # item is added into the list. So, in here, GetItemCount will be equal
+        # to 0. Since we are adding an item, we can assume that this method
+        # should always be > 0, so we just enable the sync button without
+        # verification.
+        self.btn_sync.Enable(True)
+
+    def on_show(self, wx_event):
+        # FIXME: The following needs the notification system in the client. The
+        # clean button should be enable when there are files, but there is no
+        # way to trigger this change without the openfiles_ctrl being able to
+        # push notifications elsewhere.
+        #
+        # self.btn_rem.Enable(openfiles_ctrl.load() is not None)
+
+        self.refresh()
+
+    def refresh(self):
         self.btn_sync.Enable(self.ctrl.GetItemCount() > 0)
 
 
