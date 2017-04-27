@@ -28,6 +28,7 @@ from sync.gui import gui_wx
 from sync.gui.taskbar import taskbarmain
 from sync.localbox import LocalBox
 from sync.syncer import MainSyncer
+from sync.notif import NotifHandler
 from .defaults import LOG_PATH, APPDIR, SYNCINI_PATH, OPEN_FILE_PORT
 from .controllers import openfiles_ctrl as openfiles_ctrl
 
@@ -52,6 +53,9 @@ def run_sync_daemon(observers=None):
 
         MAIN = MainSyncer(EVENT)
         MAIN.start()
+
+        Notif = NotifHandler()
+        Notif.start()
 
         taskbarmain(MAIN, observers)
     except Exception as error:  # pylint: disable=W0703

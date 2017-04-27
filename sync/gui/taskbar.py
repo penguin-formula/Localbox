@@ -6,7 +6,7 @@ try:
 except:
     from http.server import BaseHTTPRequestHandler, HTTPServer
 from logging import getLogger
-from threading import Thread
+from threading import Thread, Event
 
 import json
 import pickle
@@ -18,8 +18,10 @@ from sync.controllers.localbox_ctrl import SyncsController
 from sync.controllers.login_ctrl import LoginController
 from sync.defaults import LOCALBOX_SITES_PATH, OPEN_FILE_PORT
 from sync.gui.gui_wx import Gui, LocalBoxApp
+from sync.gui.notif_cons import NewNotifsThread, EVT_NewNotifs
 from sync.__version__ import VERSION_STRING
 from sync.localbox import LocalBox
+from sync.notif import notifs
 import sync.controllers.openfiles_ctrl as openfiles_ctrl
 from loxcommon import os_utils
 from sync import defaults
@@ -34,6 +36,11 @@ try:
 except:
     from wx.adv import TaskBarIcon, EVT_TASKBAR_LEFT_DOWN, EVT_TASKBAR_RIGHT_DOWN
     from wx.stc import ID_ANY
+
+try:
+    from wx import NotificationMessage as wxNotif
+except:
+    from wx.adv import NotificationMessage as wxNotif
 
 try:
     from ConfigParser import ConfigParser  # pylint: disable=F0401,E0611
@@ -67,6 +74,9 @@ class LocalBoxIcon(TaskBarIcon):
         self.frame.Show(False)
         self._main_syncing_thread = main_syncing_thread
 
+        self.new_notif = NewNotifsThread(self)
+        self.new_notif.start()
+
         # menu items
         self.item_start_gui = None
         self.item_sync = None
@@ -82,6 +92,7 @@ class LocalBoxIcon(TaskBarIcon):
         # bind some events
         self.Bind(EVT_TASKBAR_LEFT_DOWN, self.OnTaskBarClick)
         self.Bind(EVT_TASKBAR_RIGHT_DOWN, self.OnTaskBarClick)
+        self.Bind(EVT_NewNotifs, self.OnNewNotifs)
 
     def start_gui(self, event):  # pylint: disable=W0613
         """
@@ -168,6 +179,8 @@ class LocalBoxIcon(TaskBarIcon):
             observer.stop()
             observer.join()
 
+        notifs.stop()
+
         self.Destroy()
 
         app = wx.GetApp()
@@ -180,6 +193,10 @@ class LocalBoxIcon(TaskBarIcon):
         menu = self.create_popup_menu()
         self.PopupMenu(menu)
         # menu.Destroy()
+
+    def OnNewNotifs(self, event):
+        msg = event.getMsg()
+        wxNotif(msg["title"], msg["message"]).Show()
 
 
 # This class will handles any incoming request from
