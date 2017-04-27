@@ -5,6 +5,7 @@ localbox client library
 import errno
 import hashlib
 import re
+import os
 from _ssl import PROTOCOL_TLSv1_2
 from base64 import b64decode
 from base64 import b64encode
@@ -24,6 +25,7 @@ from sync import defaults
 from sync.auth import Authenticator, AlreadyAuthenticatedError
 from sync.controllers.login_ctrl import LoginController
 from sync.gpg import gpg
+from sync.notif import notifs
 
 try:
     from urllib2 import HTTPError, URLError
@@ -255,7 +257,9 @@ class LocalBox(object):
             request = Request(url=self.url + 'lox_api/files',
                               data=dumps({'contents': b64encode(contents), 'path': metapath}))
 
-            return self._make_call(request)
+            res = self._make_call(request)
+            notifs.uploadedFile(os.path.basename(fs_path))
+            return res
 
         except (BadStatusLine, HTTPError, OSError) as error:
             getLogger(__name__).error('Failed to upload file: %s, error=%s' % (path, error))

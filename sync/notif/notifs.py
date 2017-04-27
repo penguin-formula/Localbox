@@ -9,13 +9,17 @@ def _send(msg):
     socket.send_json(msg)
 
 
+def stop():
+    _send({ 'code': 100 })
+
+
 def syncStarted():
-    _send({ 'code': 200 })
+    _send({ 'code': 300 })
+
+
+def uploadedFile(file_name):
+    _send({ 'code': 400, 'file_name': file_name })
 
 
 def syncEnded():
-    _send({ 'code': 201 })
-
-
-def stop():
-    _send({ 'code': 100 })
+    _send({ 'code': 301 })

@@ -353,6 +353,7 @@ class MainSyncer(Thread):
                     runner.join()
                     runner.syncer.stop_event.clear()
                     getLogger(__name__).debug("joined thread %s", runner.name)
+                notifs.syncEnded()
 
                 self.waitevent.clear()
                 getLogger(__name__).debug("Cleared Event")
@@ -360,7 +361,6 @@ class MainSyncer(Thread):
                     getLogger(__name__).debug("stopped waiting")
                 else:
                     getLogger(__name__).debug("done waiting")
-                notifs.syncEnded()
         except Exception as error:  # pylint: disable=W0703
             getLogger(__name__).exception(error)
 
