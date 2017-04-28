@@ -197,7 +197,9 @@ class LocalBox(object):
         request = Request(url=self.url + 'lox_api/operations/delete/',
                           data=metapath)
         try:
-            return self._make_call(request)
+            res = self._make_call(request)
+            notifs.deletedFile(os.path.basename(localbox_path))
+            return res
         except HTTPError:
             getLogger(__name__).error("Error remote deleting '%s'", localbox_path)
 
