@@ -6,69 +6,68 @@ NotifHandler expects to see.
 
 import zmq
 
+class Notifs(object):
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(Notifs, cls).__new__(cls)
 
-def _send(msg):
-    context = zmq.Context()
-    socket = context.socket(zmq.PUSH)
-    socket.connect("tcp://127.0.0.1:8000")
+            # Creates a zmq context and connects
+            cls.context = zmq.Context()
+            cls.socket = cls.context.socket(zmq.PUSH)
+            cls.socket.connect("tcp://127.0.0.1:8000")
 
-    socket.send_json(msg)
+        return cls.instance
 
+    def _send(self, msg):
+        self.socket.send_json(msg)
 
-# =============================================================================
-# Thread Operations
-# =============================================================================
+    # =========================================================================
+    # Thread Operations
+    # =========================================================================
 
+    def stop(self):
+        """
+        Tell the NotifHandler thread to stop. Used when shutting down
+        """
 
-def stop():
-    """
-    Tell the NotifHandler thread to stop. Used when shutting down
-    """
+        self._send({ 'code': 100 })
 
-    _send({ 'code': 100 })
+    # =========================================================================
+    # Syncs
+    # =========================================================================
 
+    def syncStarted(self):
+        """
+        When a synchronization process starts
+        """
 
-# =============================================================================
-# Syncs
-# =============================================================================
+        self._send({ 'code': 300 })
 
+    def syncEnded(self):
+        """
+        When a synchronization process ends
+        """
 
-def syncStarted():
-    """
-    When a synchronization process starts
-    """
+        self._send({ 'code': 301 })
 
-    _send({ 'code': 300 })
+    # =========================================================================
+    # File Changes
+    # =========================================================================
 
+    def uploadedFile(self, file_name):
+        """
+        When a file is uploaded
 
-def syncEnded():
-    """
-    When a synchronization process ends
-    """
+        @param file_name The name of the uploaded file
+        """
 
-    _send({ 'code': 301 })
+        self._send({ 'code': 400, 'file_name': file_name })
 
+    def deletedFile(self, file_name):
+        """
+        When a file is deleted
 
-# =============================================================================
-# File Changes
-# =============================================================================
+        @param file_name The name of the deleted file
+        """
 
-
-def uploadedFile(file_name):
-    """
-    When a file is uploaded
-
-    @param file_name The name of the uploaded file
-    """
-
-    _send({ 'code': 400, 'file_name': file_name })
-
-
-def deletedFile(file_name):
-    """
-    When a file is deleted
-
-    @param file_name The name of the deleted file
-    """
-
-    _send({ 'code': 401, 'file_name': file_name })
+        self._send({ 'code': 401, 'file_name': file_name })

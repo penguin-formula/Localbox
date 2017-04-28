@@ -25,7 +25,7 @@ from sync import defaults
 from sync.auth import Authenticator, AlreadyAuthenticatedError
 from sync.controllers.login_ctrl import LoginController
 from sync.gpg import gpg
-from sync.notif import notifs
+from sync.notif import Notifs
 
 try:
     from urllib2 import HTTPError, URLError
@@ -198,7 +198,7 @@ class LocalBox(object):
                           data=metapath)
         try:
             res = self._make_call(request)
-            notifs.deletedFile(os.path.basename(localbox_path))
+            Notifs().deletedFile(os.path.basename(localbox_path))
             return res
         except HTTPError:
             getLogger(__name__).error("Error remote deleting '%s'", localbox_path)
@@ -260,7 +260,7 @@ class LocalBox(object):
                               data=dumps({'contents': b64encode(contents), 'path': metapath}))
 
             res = self._make_call(request)
-            notifs.uploadedFile(os.path.basename(fs_path))
+            Notifs().uploadedFile(os.path.basename(fs_path))
             return res
 
         except (BadStatusLine, HTTPError, OSError) as error:

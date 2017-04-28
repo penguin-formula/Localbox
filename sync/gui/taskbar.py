@@ -21,7 +21,7 @@ from sync.gui.gui_wx import Gui, LocalBoxApp
 from sync.gui.gui_notifs import GuiNotifs, EVT_NewGuiNotifs
 from sync.__version__ import VERSION_STRING
 from sync.localbox import LocalBox
-from sync.notif import notifs
+from sync.notif import Notifs
 import sync.controllers.openfiles_ctrl as openfiles_ctrl
 from loxcommon import os_utils
 from sync import defaults
@@ -179,7 +179,7 @@ class LocalBoxIcon(TaskBarIcon):
             observer.stop()
             observer.join()
 
-        notifs.stop()
+        Notifs().stop()
 
         self.Destroy()
 
