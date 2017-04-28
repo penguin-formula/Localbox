@@ -1,3 +1,11 @@
+"""
+This module declares handles processed notifications that are sent from the
+NotifHandler module to the GUI. Notifications in the GUI are handled by
+declaring a thread, from class NewNotifThread, which waits on new notifications
+from the NotifHandler module. When a new notification arrives, the event
+EVT_NewNotifs is triggered.
+"""
+
 import threading
 from logging import getLogger
 from json import loads

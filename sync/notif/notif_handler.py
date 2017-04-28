@@ -10,6 +10,17 @@ import config
 
 class NotifHandler(Thread):
     """
+    The NotifHandler is the central module that handles all the notifications
+    in the LoxClient. This module runs in it's own thread and wait for any new
+    notification to come. The module processes the incoming notifications and
+    chooses what to send and where it sends it.
+
+    For example, if 3 notifications for file uploading and 2 notifications for
+    file deletion arrive at roughly the same time, this module will send a
+    single notification to the GUI stating the "5 files changed" in order not
+    to send to many notifications to the user.
+
+    The module may send notifications to GUI or to the backend server.
     """
 
     def __init__(self):
