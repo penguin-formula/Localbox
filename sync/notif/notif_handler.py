@@ -5,6 +5,8 @@ from threading import Thread, Lock, Event, Timer
 
 import zmq
 
+import config
+
 
 class NotifHandler(Thread):
     """
@@ -56,11 +58,19 @@ class NotifHandler(Thread):
     def _publish(self, msg):
         self.publisher.send_json(msg)
 
+    # =========================================================================
+    # Thread Operations
+    # =========================================================================
+
     def handle_1xx(self, msg):
         if msg['code'] == 100:
             getLogger(__name__).debug("stopping notifications thread")
             self._publish({ "cmd": "stop" })
             self.running = False
+
+    # =========================================================================
+    # Syncs
+    # =========================================================================
 
     def handle_3xx(self, msg):
         if msg['code'] == 300:
@@ -70,7 +80,7 @@ class NotifHandler(Thread):
             if self.sync_start_delay is not None and self.sync_start_delay.is_alive():
                 self.sync_start_delay.cancel()
 
-            self.sync_start_delay = Timer(5, delay_sync_start)
+            self.sync_start_delay = Timer(config.sync_timer, delay_sync_start)
             self.sync_start_delay.start()
             self.sync_start_time = time.time()
 
@@ -79,10 +89,14 @@ class NotifHandler(Thread):
                 self.sync_start_delay.cancel()
                 self._publish({ "title": "LocalBox", "message": "Sync Made" })
 
-            elif time.time() > self.sync_start_time + 20:
+            elif time.time() > self.sync_start_time + config.sync_delay:
                 self._publish({ "title": "LocalBox", "message": "Sync Stopped" })
 
             # Else, don't show any messages
+
+    # =========================================================================
+    # File Changes
+    # =========================================================================
 
     def handle_4xx(self, msg):
         def file_op_up(file_name):
@@ -103,15 +117,15 @@ class NotifHandler(Thread):
         code = msg['code']
 
         # If nothing is waiting
-        if not self.file_op_is_alive():
+        if not self._file_op_is_alive():
             if code == 400:
                 self.file_op_count_up = 1
                 self.file_op_count_del = 0
-                self.file_op_delay = Timer(2, file_op_up, args=[msg['file_name']])
+                self.file_op_delay = self._start_file_op_timer(file_op_up, [msg['file_name']])
             elif code == 401:
                 self.file_op_count_up = 0
                 self.file_op_count_del = 1
-                self.file_op_delay = Timer(2, file_op_del, args=[msg['file_name']])
+                self.file_op_delay = self._start_file_op_timer(file_op_del, [msg['file_name']])
 
         # If there are notifications in waiting
         else:
@@ -125,20 +139,22 @@ class NotifHandler(Thread):
             # More then one upload and delete have been made
             if self.file_op_count_up > 0 and self.file_op_count_del > 0:
                 arg = self.file_op_count_up + self.file_op_count_del
-                self.file_op_delay = Timer(2, file_op_changes, args=[arg])
+                self.file_op_delay = self._start_file_op_timer(file_op_changes, [arg])
 
             # Only another upload
             elif self.file_op_count_up > 0:
                 arg = self.file_op_count_up
-                self.file_op_delay = Timer(2, file_op_many_up, args=[arg])
+                self.file_op_delay = self._start_file_op_timer(file_op_many_up, [arg])
 
             # Only another delete
             elif self.file_op_count_del > 0:
                 arg = self.file_op_count_del
-                self.file_op_delay = Timer(2, file_op_many_down, args=[arg])
+                self.file_op_delay = self._start_file_op_timer(file_op_many_down, [arg])
 
-        # Start the wait for the notification send
-        self.file_op_delay.start()
+    def _start_file_op_timer(self, op, args):
+        timer = Timer(config.file_changes_timer, op, args=args)
+        timer.start()
+        return timer
 
-    def file_op_is_alive(self):
+    def _file_op_is_alive(self):
         return self.file_op_delay is not None and self.file_op_delay.is_alive()
