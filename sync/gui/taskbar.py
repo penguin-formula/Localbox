@@ -18,7 +18,7 @@ from sync.controllers.localbox_ctrl import SyncsController
 from sync.controllers.login_ctrl import LoginController
 from sync.defaults import LOCALBOX_SITES_PATH, OPEN_FILE_PORT
 from sync.gui.gui_wx import Gui, LocalBoxApp
-from sync.gui.notif_cons import NewNotifsThread, EVT_NewNotifs
+from sync.gui.gui_notifs import GuiNotifs, EVT_NewGuiNotifs
 from sync.__version__ import VERSION_STRING
 from sync.localbox import LocalBox
 from sync.notif import notifs
@@ -74,8 +74,8 @@ class LocalBoxIcon(TaskBarIcon):
         self.frame.Show(False)
         self._main_syncing_thread = main_syncing_thread
 
-        self.new_notif = NewNotifsThread(self)
-        self.new_notif.start()
+        self.gui_notif = GuiNotifs(self)
+        self.gui_notif.start()
 
         # menu items
         self.item_start_gui = None
@@ -92,7 +92,7 @@ class LocalBoxIcon(TaskBarIcon):
         # bind some events
         self.Bind(EVT_TASKBAR_LEFT_DOWN, self.OnTaskBarClick)
         self.Bind(EVT_TASKBAR_RIGHT_DOWN, self.OnTaskBarClick)
-        self.Bind(EVT_NewNotifs, self.OnNewNotifs)
+        self.Bind(EVT_NewGuiNotifs, self.OnNewGuiNotifs)
 
     def start_gui(self, event):  # pylint: disable=W0613
         """
@@ -194,7 +194,7 @@ class LocalBoxIcon(TaskBarIcon):
         self.PopupMenu(menu)
         # menu.Destroy()
 
-    def OnNewNotifs(self, event):
+    def OnNewGuiNotifs(self, event):
         msg = event.getMsg()
         wxNotif(msg["title"], msg["message"]).Show()
 
