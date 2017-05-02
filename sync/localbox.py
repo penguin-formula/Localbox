@@ -25,7 +25,7 @@ from sync import defaults
 from sync.auth import Authenticator, AlreadyAuthenticatedError
 from sync.controllers.login_ctrl import LoginController
 from sync.gpg import gpg
-from sync.notif import Notifs
+from sync.notif.notifs import Notifs
 
 try:
     from urllib2 import HTTPError, URLError

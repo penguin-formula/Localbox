@@ -16,12 +16,12 @@ from os.path import exists
 import sync.gui.gui_utils as gui_utils
 from sync.controllers.localbox_ctrl import SyncsController
 from sync.controllers.login_ctrl import LoginController
-from sync.defaults import LOCALBOX_SITES_PATH, OPEN_FILE_PORT
+from sync.defaults import LOCALBOX_SITES_PATH
 from sync.gui.gui_wx import Gui, LocalBoxApp
 from sync.gui.gui_notifs import GuiNotifs, EVT_NewGuiNotifs
 from sync.__version__ import VERSION_STRING
 from sync.localbox import LocalBox
-from sync.notif import Notifs
+from sync.notif.notifs import Notifs
 import sync.controllers.openfiles_ctrl as openfiles_ctrl
 from loxcommon import os_utils
 from sync import defaults
@@ -271,53 +271,6 @@ class OpenFileHandler(BaseHTTPRequestHandler):
         return path.split('/')[0]
 
 
-def port_available(port):
-    import socket
-
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    try:
-        s.bind(('localhost', port))
-    except socket.error as e:
-        return False
-
-    s.close()
-    return True
-
-def start_open_file_server():
-    def serve_forever(server):
-        server.serve_forever()
-
-    # Find an available port within a range
-    port = None
-    for i in range(9000, 9100):
-        if port_available(i):
-            port = i
-            break
-
-    if port is None:
-        getLogger(__name__).error('Can\'t find port to bind open file server')
-        exit(1)
-
-    # Keep port in pickle file
-    with open(OPEN_FILE_PORT, 'wb') as f:
-        pickle.dump(port, f)
-
-    # Start server
-    server = None
-    try:
-        server = HTTPServer(('', port), OpenFileHandler)
-    except Exception as e:
-        getLogger(__name__).exception('Failed to start open file server')
-        return 1
-
-    MAIN = Thread(target=serve_forever, args=[server])
-    MAIN.daemon = True
-    MAIN.start()
-
-    getLogger(__name__).info('Started open file server on port %s' % port)
-
-
 def is_first_run():
     return not exists(LOCALBOX_SITES_PATH)
 
@@ -327,8 +280,6 @@ def taskbarmain(main_syncing_thread, sites=None, observers=None):
     main function to run to get the taskbar started
     """
     app = LocalBoxApp(False)
-
-    start_open_file_server()
 
     icon = LocalBoxIcon(main_syncing_thread, sites=sites, observers=observers)
 
