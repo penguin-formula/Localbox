@@ -13,13 +13,13 @@ class Notifs(object):
 
             # Creates a zmq context and connects
             cls.context = zmq.Context()
-            cls.socket = cls.context.socket(zmq.PUSH)
-            cls.socket.connect("tcp://127.0.0.1:8000")
+            cls.push_sock = cls.context.socket(zmq.PUSH)
+            cls.push_sock.connect("tcp://127.0.0.1:8000") # FIXME: Hardcoded port
 
         return cls.instance
 
     def _send(self, msg):
-        self.socket.send_json(msg)
+        self.push_sock.send_json(msg)
 
     # =========================================================================
     # Thread Operations
@@ -71,3 +71,20 @@ class Notifs(object):
         """
 
         self._send({ 'code': 401, 'file_name': file_name })
+
+    # =========================================================================
+    # Request File Operations
+    # =========================================================================
+
+    # TODO
+    def openFileReq(self, data_dic):
+        """
+        NOT IMPLEMENTED
+
+        Request a file of a specific box to be opena
+
+        @param data_dic The data dictionary containing the information
+        necessary to identify the file to be open
+        """
+
+        self._send({ 'code': 500, 'data_dic': data_dic })

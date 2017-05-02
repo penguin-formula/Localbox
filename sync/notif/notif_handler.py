@@ -1,11 +1,13 @@
 import os
 import time
+import json
 from logging import getLogger
 from threading import Thread, Lock, Event, Timer
 
 import zmq
 
 import config
+from .. import zmq_ops
 
 
 class NotifHandler(Thread):
@@ -40,19 +42,19 @@ class NotifHandler(Thread):
     def run(self):
         # Start socket for pulling new notifications
         self.context = zmq.Context()
-        self.consumer = self.context.socket(zmq.PULL)
-        self.consumer.bind("tcp://127.0.0.1:8000")
+        self.in_notifs = self.context.socket(zmq.PULL)
+        self.in_notifs.bind("tcp://127.0.0.1:8000") # FIXME: Hardcoded port
 
         # Start socket to publish new processed notification
-        self.publisher = self.context.socket(zmq.PUB)
-        self.publisher.bind("tcp://127.0.0.1:8001")
+        self.out_notifs = self.context.socket(zmq.PUB)
+        self.out_notifs.bind("tcp://127.0.0.1:8001") # FIXME: Hardcoded port
 
         getLogger(__name__).debug("notifications thread starting")
 
         # Loop until the thread is stopped
         self.running = True
         while self.running:
-            msg = self.consumer.recv_json()
+            msg = self.in_notifs.recv_json()
             code = msg['code']
 
             if code >= 100 and code < 200:
@@ -64,10 +66,21 @@ class NotifHandler(Thread):
             elif code >= 400 and code < 500:
                 self.handle_4xx(msg)
 
+            elif code >= 500 and code < 600:
+                self.handle_5xx(msg)
+
         getLogger(__name__).debug("notifications thread stopped")
 
-    def _publish(self, msg):
-        self.publisher.send_json(msg)
+    def _publish(self, opt, msg):
+        msg_str = json.dumps(msg)
+        contents = zmq_ops.mogrify(opt, msg_str)
+        self.out_notifs.send(contents)
+
+    def _publish_gui_notif(self, msg):
+        self._publish(zmq_ops.zmq_gui_notif, msg)
+
+    def _publish_file_op_notif(self, msg):
+        self._publish(zmq_ops.zmq_file_op_notif, msg)
 
     # =========================================================================
     # Thread Operations
@@ -76,7 +89,7 @@ class NotifHandler(Thread):
     def handle_1xx(self, msg):
         if msg['code'] == 100:
             getLogger(__name__).debug("stopping notifications thread")
-            self._publish({ "cmd": "stop" })
+            self._publish_gui_notif({ "cmd": "stop" })
             self.running = False
 
     # =========================================================================
@@ -86,7 +99,7 @@ class NotifHandler(Thread):
     def handle_3xx(self, msg):
         if msg['code'] == 300:
             def delay_sync_start():
-                self._publish({ "title": "LocalBox", "message": "Sync Started" })
+                self._publish_gui_notif({ "title": "LocalBox", "message": "Sync Started" })
 
             if self.sync_start_delay is not None and self.sync_start_delay.is_alive():
                 self.sync_start_delay.cancel()
@@ -98,10 +111,10 @@ class NotifHandler(Thread):
         elif msg['code'] == 301:
             if self.sync_start_delay is not None and self.sync_start_delay.is_alive():
                 self.sync_start_delay.cancel()
-                self._publish({ "title": "LocalBox", "message": "Sync Made" })
+                self._publish_gui_notif({ "title": "LocalBox", "message": "Sync Made" })
 
             elif time.time() > self.sync_start_time + config.sync_delay:
-                self._publish({ "title": "LocalBox", "message": "Sync Stopped" })
+                self._publish_gui_notif({ "title": "LocalBox", "message": "Sync Stopped" })
 
             # Else, don't show any messages
 
@@ -111,19 +124,19 @@ class NotifHandler(Thread):
 
     def handle_4xx(self, msg):
         def file_op_up(file_name):
-            self._publish({ "title": "LocalBox", "message": "Uploaded file {}".format(file_name) })
+            self._publish_gui_notif({ "title": "LocalBox", "message": "Uploaded file {}".format(file_name) })
 
         def file_op_del(file_name):
-            self._publish({ "title": "LocalBox", "message": "Deleted file {}".format(file_name) })
+            self._publish_gui_notif({ "title": "LocalBox", "message": "Deleted file {}".format(file_name) })
 
         def file_op_many_up(count):
-            self._publish({ "title": "LocalBox", "message": "Uploaded {} files".format(count) })
+            self._publish_gui_notif({ "title": "LocalBox", "message": "Uploaded {} files".format(count) })
 
         def file_op_many_down(count):
-            self._publish({ "title": "LocalBox", "message": "Deleted {} files".format(count) })
+            self._publish_gui_notif({ "title": "LocalBox", "message": "Deleted {} files".format(count) })
 
         def file_op_changes(count):
-            self._publish({ "title": "LocalBox", "message": "Changed {} files".format(count) })
+            self._publish_gui_notif({ "title": "LocalBox", "message": "Changed {} files".format(count) })
 
         code = msg['code']
 
@@ -169,3 +182,12 @@ class NotifHandler(Thread):
 
     def _file_op_is_alive(self):
         return self.file_op_delay is not None and self.file_op_delay.is_alive()
+
+    # =========================================================================
+    # Request File Operations
+    # =========================================================================
+
+    # TODO
+    def handle_5xx(self, msg):
+        if msg['code'] == 500:
+            pass

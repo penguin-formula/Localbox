@@ -8,10 +8,12 @@ EVT_NewGuiNotifs is triggered.
 
 import threading
 from logging import getLogger
-from json import loads
+import json
 
 import wx
 import zmq
+
+from .. import zmq_ops
 
 NewGuiNotifsBind = wx.NewEventType()
 EVT_NewGuiNotifs = wx.PyEventBinder(NewGuiNotifsBind, 1)
@@ -50,13 +52,15 @@ class GuiNotifs(threading.Thread):
 
     def run(self):
         self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.SUB)
+        self.notifs_sub = self.context.socket(zmq.SUB)
 
-        self.socket.setsockopt(zmq.SUBSCRIBE, "")
-        self.socket.connect("tcp://localhost:8001")
+        self.notifs_sub.setsockopt(zmq.SUBSCRIBE, zmq_ops.zmq_gui_notif)
+        self.notifs_sub.connect("tcp://localhost:8001") # FIXME: Hardcoded port
 
         while True:
-            msg = self.socket.recv_json()
+            contents = self.notifs_sub.recv()
+            msg_str = zmq_ops.demogrify(contents)
+            msg = json.loads(msg_str)
 
             if "cmd" in msg and msg["cmd"] == "stop":
                 break

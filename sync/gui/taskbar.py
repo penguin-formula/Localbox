@@ -296,7 +296,7 @@ def start_open_file_server():
             break
 
     if port is None:
-        getLogger(__name__).error('Can\'t find port to bind open file server')
+        getLogger(__name__).error('can\'t find port to bind open file server')
         exit(1)
 
     # Keep port in pickle file
