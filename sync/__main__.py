@@ -111,37 +111,6 @@ def run_file_decryption(filename):
             gui_utils.show_error_dialog(_('Failed to decode contents'), 'Error', standalone=True)
             getLogger(__name__).info('failed to decode contents. aborting')
 
-        # =====================================================================
-        return
-        # =====================================================================
-        # Code below should go because is no longer needed
-        # =====================================================================
-
-        # with open(, 'rb') as f:
-        #     port = pickle.load(f)
-        port = ports.get_port('open_file_port')
-
-        url = 'http://localhost:{}/open_file'.format(port)
-        data = json.dumps(data_dic)
-        req = urllib2.Request(url, data, {'Content-Type': 'application/json'})
-
-        answer = urllib2.urlopen(req)
-        res_code = answer.getcode()
-
-        # Open file and keep it in the open files list
-        if res_code == 200:
-            tmp_decoded_filename = answer.read()
-
-            open_file_ext(tmp_decoded_filename)
-
-            getLogger(__name__).info('Finished decrypting and opening file: %s', filename)
-
-        # The file may not exist, or something else might have gone wrong
-        elif res_code == 404:
-            gui_utils.show_error_dialog(_('Failed to decode contents'), 'Error', standalone=True)
-            getLogger(__name__).info('failed to decode contents. aborting')
-            return
-
     except Exception as ex:
         getLogger(__name__).exception(ex)
 
