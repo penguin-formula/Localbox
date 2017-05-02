@@ -8,7 +8,7 @@ import json
 
 import zmq
 
-from .. import zmq_ops
+from sync.notif import notifs_util
 
 
 class Notifs(object):
@@ -19,7 +19,7 @@ class Notifs(object):
             # Creates a zmq context and connects
             cls.context = zmq.Context.instance()
             cls.push_sock = cls.context.socket(zmq.PUSH)
-            cls.push_sock.connect("ipc:///tmp/loxclient_i")
+            cls.push_sock.connect(notifs_util.zmq_ipc_push)
 
         return cls.instance
 
@@ -83,9 +83,8 @@ class Notifs(object):
 
     def openFileReq(self, data_dic):
         """
-        NOT IMPLEMENTED
-
-        Request a file of a specific box to be opena
+        Request a file of a specific box to be open. Returns the name of the
+        opened file
 
         @param data_dic The data dictionary containing the information
         necessary to identify the file to be open
@@ -94,15 +93,15 @@ class Notifs(object):
         # Subscribe just for this file
         self.notifs_sub = self.context.socket(zmq.SUB)
 
-        self.notifs_sub.setsockopt(zmq.SUBSCRIBE, zmq_ops.zmq_file_op_notif)
-        self.notifs_sub.connect("ipc:///tmp/loxclient_o")
+        self.notifs_sub.setsockopt(zmq.SUBSCRIBE, notifs_util.zmq_file_op_notif)
+        self.notifs_sub.connect(notifs_util.zmq_ipc_pub)
 
         # Send request
         self._send({ 'code': 500, 'data_dic': data_dic })
 
         # Wait for the answer
         contents = self.notifs_sub.recv()
-        msg_str = zmq_ops.demogrify(contents)
+        msg_str = notifs_util.demogrify(contents)
         msg = json.loads(msg_str)
 
         return msg['file_name']

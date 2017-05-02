@@ -8,7 +8,7 @@ import zmq
 
 import config
 from sync.open_file import open_file
-from .. import zmq_ops
+from sync.notif import notifs_util
 
 
 class NotifHandler(Thread):
@@ -46,11 +46,11 @@ class NotifHandler(Thread):
     def run(self):
         # Start socket for pulling new notifications
         self.in_notifs = self.context.socket(zmq.PULL)
-        self.in_notifs.bind("ipc:///tmp/loxclient_i")
+        self.in_notifs.bind(notifs_util.zmq_ipc_push)
 
         # Start socket to publish new processed notification
         self.out_notifs = self.context.socket(zmq.PUB)
-        self.out_notifs.bind("ipc:///tmp/loxclient_o")
+        self.out_notifs.bind(notifs_util.zmq_ipc_pub)
 
         getLogger(__name__).debug("notifications thread starting")
 
@@ -76,14 +76,14 @@ class NotifHandler(Thread):
 
     def _publish(self, opt, msg):
         msg_str = json.dumps(msg)
-        contents = zmq_ops.mogrify(opt, msg_str)
+        contents = notifs_util.mogrify(opt, msg_str)
         self.out_notifs.send(contents)
 
     def _publish_gui_notif(self, msg):
-        self._publish(zmq_ops.zmq_gui_notif, msg)
+        self._publish(notifs_util.zmq_gui_notif, msg)
 
     def _publish_file_op_notif(self, msg):
-        self._publish(zmq_ops.zmq_file_op_notif, msg)
+        self._publish(notifs_util.zmq_file_op_notif, msg)
 
     # =========================================================================
     # Thread Operations

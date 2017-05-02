@@ -13,7 +13,7 @@ import json
 import wx
 import zmq
 
-from .. import zmq_ops
+from sync.notif import notifs_util
 
 NewGuiNotifsBind = wx.NewEventType()
 EVT_NewGuiNotifs = wx.PyEventBinder(NewGuiNotifsBind, 1)
@@ -54,12 +54,12 @@ class GuiNotifs(threading.Thread):
     def run(self):
         self.notifs_sub = self.context.socket(zmq.SUB)
 
-        self.notifs_sub.setsockopt(zmq.SUBSCRIBE, zmq_ops.zmq_gui_notif)
-        self.notifs_sub.connect("ipc:///tmp/loxclient_o")
+        self.notifs_sub.setsockopt(zmq.SUBSCRIBE, notifs_util.zmq_gui_notif)
+        self.notifs_sub.connect(notifs_util.zmq_ipc_pub)
 
         while True:
             contents = self.notifs_sub.recv()
-            msg_str = zmq_ops.demogrify(contents)
+            msg_str = notifs_util.demogrify(contents)
             msg = json.loads(msg_str)
 
             if "cmd" in msg and msg["cmd"] == "stop":
