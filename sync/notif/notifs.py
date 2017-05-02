@@ -4,7 +4,11 @@ NotifHandler. They are just simple wrappers around the possible messages that
 NotifHandler expects to see.
 """
 
+import json
+
 import zmq
+
+from .. import zmq_ops
 
 
 class Notifs(object):
@@ -15,7 +19,7 @@ class Notifs(object):
             # Creates a zmq context and connects
             cls.context = zmq.Context.instance()
             cls.push_sock = cls.context.socket(zmq.PUSH)
-            cls.push_sock.connect("ipc:///tmp/loxclient")
+            cls.push_sock.connect("ipc:///tmp/loxclient_i")
 
         return cls.instance
 
@@ -87,4 +91,18 @@ class Notifs(object):
         necessary to identify the file to be open
         """
 
+        # Subscribe just for this file
+        self.notifs_sub = self.context.socket(zmq.SUB)
+
+        self.notifs_sub.setsockopt(zmq.SUBSCRIBE, zmq_ops.zmq_file_op_notif)
+        self.notifs_sub.connect("ipc:///tmp/loxclient_o")
+
+        # Send request
         self._send({ 'code': 500, 'data_dic': data_dic })
+
+        # Wait for the answer
+        contents = self.notifs_sub.recv()
+        msg_str = zmq_ops.demogrify(contents)
+        msg = json.loads(msg_str)
+
+        return msg['file_name']

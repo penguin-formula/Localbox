@@ -55,7 +55,7 @@ class GuiNotifs(threading.Thread):
         self.notifs_sub = self.context.socket(zmq.SUB)
 
         self.notifs_sub.setsockopt(zmq.SUBSCRIBE, zmq_ops.zmq_gui_notif)
-        self.notifs_sub.connect("inproc://out_notifs")
+        self.notifs_sub.connect("ipc:///tmp/loxclient_o")
 
         while True:
             contents = self.notifs_sub.recv()

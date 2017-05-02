@@ -103,12 +103,7 @@ def run_file_decryption(filename):
 
         file_to_open = Notifs().openFileReq(data_dic)
 
-        file_to_open = os_utils.remove_extension(data_dic["filename"],
-                                                 defaults.LOCALBOX_EXTENSION)
-
-        # TODO: File should be open
-        return
-        if os.path.exists(file_to_open):
+        if file_to_open is not None and os.path.exists(file_to_open):
             open_file_ext(file_to_open)
             getLogger(__name__).info('Finished decrypting and opening file: %s', filename)
 

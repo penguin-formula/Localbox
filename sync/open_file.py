@@ -27,9 +27,7 @@ def open_file(data_dic):
         gui_utils.show_error_dialog(_('Failed to decode contents'), 'Error', standalone=True)
         getLogger(__name__).info('failed to decode contents. aborting')
 
-        # FIXME: HANDLE DA ERROR!!!
-        # self.send_response(404)
-        return
+        return None
 
     # If the file was decoded, write it to disk
     tmp_decoded_filename = \

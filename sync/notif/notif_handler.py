@@ -46,11 +46,11 @@ class NotifHandler(Thread):
     def run(self):
         # Start socket for pulling new notifications
         self.in_notifs = self.context.socket(zmq.PULL)
-        self.in_notifs.bind("ipc:///tmp/loxclient")
+        self.in_notifs.bind("ipc:///tmp/loxclient_i")
 
         # Start socket to publish new processed notification
         self.out_notifs = self.context.socket(zmq.PUB)
-        self.out_notifs.bind("inproc://out_notifs")
+        self.out_notifs.bind("ipc:///tmp/loxclient_o")
 
         getLogger(__name__).debug("notifications thread starting")
 
@@ -190,7 +190,7 @@ class NotifHandler(Thread):
     # Request File Operations
     # =========================================================================
 
-    # TODO
     def handle_5xx(self, msg):
         if msg['code'] == 500:
-            open_file(msg['data_dic'])
+            file_name = open_file(msg['data_dic'])
+            self._publish_file_op_notif({'file_name': file_name})

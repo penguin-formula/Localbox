@@ -271,43 +271,6 @@ class OpenFileHandler(BaseHTTPRequestHandler):
         return path.split('/')[0]
 
 
-def start_open_file_server():
-    def serve_forever(server):
-        server.serve_forever()
-
-    # # Find an available port within a range
-    # port = None
-    # for i in range(9000, 9100):
-    #     if port_available(i):
-    #         port = i
-    #         break
-    #
-    # if port is None:
-    #     getLogger(__name__).error('can\'t find port to bind open file server')
-    #     exit(1)
-    #
-    # # Keep port in pickle file
-    # with open(OPEN_FILE_PORT, 'wb') as f:
-    #     pickle.dump(port, f)
-
-    # port = ports.get_port('open_file_port')
-    port = 9900
-
-    # Start server
-    server = None
-    try:
-        server = HTTPServer(('', port), OpenFileHandler)
-    except Exception as e:
-        getLogger(__name__).exception('Failed to start open file server')
-        return 1
-
-    MAIN = Thread(target=serve_forever, args=[server])
-    MAIN.daemon = True
-    MAIN.start()
-
-    getLogger(__name__).info('Started open file server on port %s' % port)
-
-
 def is_first_run():
     return not exists(LOCALBOX_SITES_PATH)
 
@@ -317,8 +280,6 @@ def taskbarmain(main_syncing_thread, sites=None, observers=None):
     main function to run to get the taskbar started
     """
     app = LocalBoxApp(False)
-
-    start_open_file_server()
 
     icon = LocalBoxIcon(main_syncing_thread, sites=sites, observers=observers)
 
