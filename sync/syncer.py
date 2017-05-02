@@ -31,7 +31,7 @@ from sync.controllers.login_ctrl import LoginController
 from sync.defaults import SITESINI_PATH
 from sync.localbox import LocalBox
 from sync.profiling import profile
-from sync.notif import Notifs
+from sync.notif.notifs import Notifs
 from .defaults import OLD_SYNC_STATUS
 from .metavfs import MetaVFS
 from .controllers import openfiles_ctrl

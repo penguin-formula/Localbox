@@ -49,13 +49,13 @@ class GuiNotifs(threading.Thread):
     def __init__(self, parent):
         threading.Thread.__init__(self)
         self._parent = parent
+        self.context = zmq.Context.instance()
 
     def run(self):
-        self.context = zmq.Context()
         self.notifs_sub = self.context.socket(zmq.SUB)
 
         self.notifs_sub.setsockopt(zmq.SUBSCRIBE, zmq_ops.zmq_gui_notif)
-        self.notifs_sub.connect("tcp://localhost:8001") # FIXME: Hardcoded port
+        self.notifs_sub.connect("inproc://out_notifs")
 
         while True:
             contents = self.notifs_sub.recv()

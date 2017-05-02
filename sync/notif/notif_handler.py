@@ -7,6 +7,7 @@ from threading import Thread, Lock, Event, Timer
 import zmq
 
 import config
+from sync.open_file import open_file
 from .. import zmq_ops
 
 
@@ -39,15 +40,17 @@ class NotifHandler(Thread):
         self.file_op_count_up = 0
         self.file_op_count_del = 0
 
+        # ZeroMQ context for sockets
+        self.context = zmq.Context.instance()
+
     def run(self):
         # Start socket for pulling new notifications
-        self.context = zmq.Context()
         self.in_notifs = self.context.socket(zmq.PULL)
-        self.in_notifs.bind("tcp://127.0.0.1:8000") # FIXME: Hardcoded port
+        self.in_notifs.bind("ipc:///tmp/loxclient")
 
         # Start socket to publish new processed notification
         self.out_notifs = self.context.socket(zmq.PUB)
-        self.out_notifs.bind("tcp://127.0.0.1:8001") # FIXME: Hardcoded port
+        self.out_notifs.bind("inproc://out_notifs")
 
         getLogger(__name__).debug("notifications thread starting")
 
@@ -190,4 +193,4 @@ class NotifHandler(Thread):
     # TODO
     def handle_5xx(self, msg):
         if msg['code'] == 500:
-            pass
+            open_file(msg['data_dic'])

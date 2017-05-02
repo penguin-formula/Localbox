@@ -6,15 +6,16 @@ NotifHandler expects to see.
 
 import zmq
 
+
 class Notifs(object):
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, 'instance'):
             cls.instance = super(Notifs, cls).__new__(cls)
 
             # Creates a zmq context and connects
-            cls.context = zmq.Context()
+            cls.context = zmq.Context.instance()
             cls.push_sock = cls.context.socket(zmq.PUSH)
-            cls.push_sock.connect("tcp://127.0.0.1:8000") # FIXME: Hardcoded port
+            cls.push_sock.connect("ipc:///tmp/loxclient")
 
         return cls.instance
 
@@ -76,7 +77,6 @@ class Notifs(object):
     # Request File Operations
     # =========================================================================
 
-    # TODO
     def openFileReq(self, data_dic):
         """
         NOT IMPLEMENTED

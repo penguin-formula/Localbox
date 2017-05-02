@@ -28,8 +28,10 @@ from sync.gui import gui_wx
 from sync.gui.taskbar import taskbarmain
 from sync.localbox import LocalBox
 from sync.syncer import MainSyncer
-from sync.notif import NotifHandler
-from .defaults import LOG_PATH, APPDIR, SYNCINI_PATH, OPEN_FILE_PORT
+from sync.notif.notif_handler import NotifHandler
+from sync.notif.notifs import Notifs
+from sync import ports
+from .defaults import LOG_PATH, APPDIR, SYNCINI_PATH
 from .controllers import openfiles_ctrl as openfiles_ctrl
 
 try:
@@ -99,8 +101,30 @@ def run_file_decryption(filename):
             "localbox_filename": localbox_filename
         }
 
-        with open(OPEN_FILE_PORT, 'rb') as f:
-            port = pickle.load(f)
+        file_to_open = Notifs().openFileReq(data_dic)
+
+        file_to_open = os_utils.remove_extension(data_dic["filename"],
+                                                 defaults.LOCALBOX_EXTENSION)
+
+        # TODO: File should be open
+        return
+        if os.path.exists(file_to_open):
+            open_file_ext(file_to_open)
+            getLogger(__name__).info('Finished decrypting and opening file: %s', filename)
+
+        else:
+            gui_utils.show_error_dialog(_('Failed to decode contents'), 'Error', standalone=True)
+            getLogger(__name__).info('failed to decode contents. aborting')
+
+        # =====================================================================
+        return
+        # =====================================================================
+        # Code below should go because is no longer needed
+        # =====================================================================
+
+        # with open(, 'rb') as f:
+        #     port = pickle.load(f)
+        port = ports.get_port('open_file_port')
 
         url = 'http://localhost:{}/open_file'.format(port)
         data = json.dumps(data_dic)
