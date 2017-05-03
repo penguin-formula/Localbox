@@ -30,7 +30,6 @@ from sync.localbox import LocalBox
 from sync.syncer import MainSyncer
 from sync.notif.notif_handler import NotifHandler
 from sync.notif.notifs import Notifs
-from sync import ports
 from .defaults import LOG_PATH, APPDIR, SYNCINI_PATH
 from .controllers import openfiles_ctrl as openfiles_ctrl
 
