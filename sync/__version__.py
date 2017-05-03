@@ -1,6 +1,6 @@
 from subprocess import check_output
 
-VERSION_STRING = '1.6.4b'
+VERSION_STRING = '1.6.5b'
 
 try:
     git_version = check_output(['git', 'log']).split('\n')[0].split(' ')[1]
