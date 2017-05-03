@@ -268,6 +268,12 @@ class Syncer(object):
         self.populate_filepath_metadata(path='./', parent=None)
         self.filepath_metadata.save(OLD_SYNC_STATUS + self.name)
 
+    def do_heartbeat(self):
+        if self.localbox.do_heartbeat():
+            Notifs().syncHeartbeatUp(self.name)
+        else:
+            Notifs().syncHeartbeatDown(self.name)
+
 
 class SyncRunner(Thread):
     """
@@ -382,6 +388,11 @@ class MainSyncer(Thread):
             stop_this_threads = self._thread_pool.values()
 
         map(lambda s: s.stop_event.set(), filter(lambda s: not s.stop_event.is_set(), stop_this_threads))
+
+    def do_heartbeat(self, labels=None):
+        for syncer in get_syncers():
+            if labels is None or labels == [] or syncer.name in labels:
+                syncer.do_heartbeat()
 
     def is_running(self):
         return self.waitevent.is_set()

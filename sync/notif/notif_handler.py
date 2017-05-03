@@ -121,6 +121,15 @@ class NotifHandler(Thread):
 
             # Else, don't show any messages
 
+        elif msg['code'] == 302:
+            message = "Sync \"{}\" is Online".format(msg["label"])
+            self._publish_gui_notif({ "title": "LocalBox", "message": message })
+
+        elif msg['code'] == 303:
+            message = "Sync \"{}\" is Offline".format(msg["label"])
+            self._publish_gui_notif({ "title": "LocalBox", "message": message })
+
+
     # =========================================================================
     # File Changes
     # =========================================================================

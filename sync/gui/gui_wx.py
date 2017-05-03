@@ -220,10 +220,12 @@ class LocalboxPanel(LoxPanel):
         # Make widgets
         self.btn_sync = wx.Button(self, label=_('Sync'), size=(100, 30))
         self.btn_rem = wx.Button(self, label=_('Clean'), size=(100, 30))
+        self.btn_ping = wx.Button(self, label=_('Ping'), size=(100, 30))
 
         # Bind events
         self.Bind(wx.EVT_BUTTON, self.on_btn_sync, self.btn_sync)
         self.Bind(wx.EVT_BUTTON, self.on_btn_rem, self.btn_rem)
+        self.Bind(wx.EVT_BUTTON, self.on_btn_ping, self.btn_ping)
         self.Bind(wx.EVT_LIST_DELETE_ITEM, self._on_list_delete_item)
         self.Bind(wx.EVT_LIST_INSERT_ITEM, self._on_list_insert_item)
         self.Bind(wx.EVT_SHOW, self.on_show)
@@ -248,6 +250,7 @@ class LocalboxPanel(LoxPanel):
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
         hbox4.Add(self.btn_sync, 0, wx.EXPAND)
         hbox4.Add(self.btn_rem, 0, wx.EXPAND)
+        hbox4.Add(self.btn_ping, 0, wx.EXPAND)
         hbox4.Add((0, 0), 1, wx.EXPAND)
         hbox4.Add(self.btn_add, 0, wx.EXPAND)
         hbox4.Add(self.btn_del, 0, wx.EXPAND)
@@ -270,6 +273,10 @@ class LocalboxPanel(LoxPanel):
 
     def on_btn_rem(self, wx_event):
         remove_decrypted_files()
+
+    def on_btn_ping(self, wx_event):
+        labels_to_sync = self.ctrl.selected()
+        self._main_syncing_thread.do_heartbeat(labels_to_sync)
 
     def on_btn_add(self, wx_event):
         NewSyncWizard(self.ctrl, self.event)
