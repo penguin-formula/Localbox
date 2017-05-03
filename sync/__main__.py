@@ -28,7 +28,9 @@ from sync.gui import gui_wx
 from sync.gui.taskbar import taskbarmain
 from sync.localbox import LocalBox
 from sync.syncer import MainSyncer
-from .defaults import LOG_PATH, APPDIR, SYNCINI_PATH, OPEN_FILE_PORT
+from sync.notif.notif_handler import NotifHandler
+from sync.notif.notifs import Notifs
+from .defaults import LOG_PATH, APPDIR, SYNCINI_PATH
 from .controllers import openfiles_ctrl as openfiles_ctrl
 
 try:
@@ -52,6 +54,9 @@ def run_sync_daemon(observers=None):
 
         MAIN = MainSyncer(EVENT)
         MAIN.start()
+
+        Notif = NotifHandler()
+        Notif.start()
 
         taskbarmain(MAIN, observers)
     except Exception as error:  # pylint: disable=W0703
@@ -95,29 +100,15 @@ def run_file_decryption(filename):
             "localbox_filename": localbox_filename
         }
 
-        with open(OPEN_FILE_PORT, 'rb') as f:
-            port = pickle.load(f)
+        file_to_open = Notifs().openFileReq(data_dic)
 
-        url = 'http://localhost:{}/open_file'.format(port)
-        data = json.dumps(data_dic)
-        req = urllib2.Request(url, data, {'Content-Type': 'application/json'})
-
-        answer = urllib2.urlopen(req)
-        res_code = answer.getcode()
-
-        # Open file and keep it in the open files list
-        if res_code == 200:
-            tmp_decoded_filename = answer.read()
-
-            open_file_ext(tmp_decoded_filename)
-
+        if file_to_open is not None and os.path.exists(file_to_open):
+            open_file_ext(file_to_open)
             getLogger(__name__).info('Finished decrypting and opening file: %s', filename)
 
-        # The file may not exist, or something else might have gone wrong
-        elif res_code == 404:
+        else:
             gui_utils.show_error_dialog(_('Failed to decode contents'), 'Error', standalone=True)
             getLogger(__name__).info('failed to decode contents. aborting')
-            return
 
     except Exception as ex:
         getLogger(__name__).exception(ex)

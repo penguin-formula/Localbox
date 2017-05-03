@@ -31,6 +31,7 @@ from sync.controllers.login_ctrl import LoginController
 from sync.defaults import SITESINI_PATH
 from sync.localbox import LocalBox
 from sync.profiling import profile
+from sync.notif.notifs import Notifs
 from .defaults import OLD_SYNC_STATUS
 from .metavfs import MetaVFS
 from .controllers import openfiles_ctrl
@@ -336,6 +337,7 @@ class MainSyncer(Thread):
                 delay = 3600
             while self.keep_running:
                 getLogger(__name__).debug("starting loop")
+                Notifs().syncStarted()
                 self.waitevent.set()
                 for syncer in get_syncers():
                     if len(self._labels_to_sync) > 0 and syncer.name not in self._labels_to_sync:
@@ -351,6 +353,7 @@ class MainSyncer(Thread):
                     runner.join()
                     runner.syncer.stop_event.clear()
                     getLogger(__name__).debug("joined thread %s", runner.name)
+                Notifs().syncEnded()
 
                 self.waitevent.clear()
                 getLogger(__name__).debug("Cleared Event")
