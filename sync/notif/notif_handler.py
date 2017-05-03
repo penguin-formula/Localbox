@@ -46,11 +46,11 @@ class NotifHandler(Thread):
     def run(self):
         # Start socket for pulling new notifications
         self.in_notifs = self.context.socket(zmq.PULL)
-        self.in_notifs.bind(notifs_util.zmq_ipc_push)
+        self.in_notifs.bind(notifs_util.zmq_ipc_push_bind)
 
         # Start socket to publish new processed notification
         self.out_notifs = self.context.socket(zmq.PUB)
-        self.out_notifs.bind(notifs_util.zmq_ipc_pub)
+        self.out_notifs.bind(notifs_util.zmq_ipc_pub_bind)
 
         getLogger(__name__).debug("notifications thread starting")
 
