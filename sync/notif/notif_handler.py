@@ -85,6 +85,9 @@ class NotifHandler(Thread):
     def _publish_file_op_notif(self, msg):
         self._publish(notifs_util.zmq_file_op_notif, msg)
 
+    def _publish_gui_heartbeat(self, msg):
+        self._publish(notifs_util.zmq_gui_heartbeat, msg)
+
     # =========================================================================
     # Thread Operations
     # =========================================================================
@@ -93,6 +96,7 @@ class NotifHandler(Thread):
         if msg['code'] == 100:
             getLogger(__name__).debug("stopping notifications thread")
             self._publish_gui_notif({ "cmd": "stop" })
+            self._publish_gui_heartbeat({ "cmd": "stop" })
             self.running = False
 
     # =========================================================================
@@ -124,10 +128,12 @@ class NotifHandler(Thread):
         elif msg['code'] == 302:
             message = "Sync \"{}\" is Online".format(msg["label"])
             self._publish_gui_notif({ "title": "LocalBox", "message": message })
+            self._publish_gui_heartbeat({ "label": msg["label"], "online": True })
 
         elif msg['code'] == 303:
             message = "Sync \"{}\" is Offline".format(msg["label"])
             self._publish_gui_notif({ "title": "LocalBox", "message": message })
+            self._publish_gui_heartbeat({ "label": msg["label"], "online": False })
 
 
     # =========================================================================

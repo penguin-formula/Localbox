@@ -489,6 +489,7 @@ class LocalBox(object):
 
     def do_heartbeat(self):
         """
+        TODO
         """
         request = Request(url=self.url + 'lox_api/heartbeat')
 

@@ -45,6 +45,7 @@ class Syncer(object):
         self.localbox_metadata = None
         self.filepath_metadata = None
         self.direction = direction
+        self.online = False
         self._stop_event = None
 
     @property
@@ -270,8 +271,10 @@ class Syncer(object):
 
     def do_heartbeat(self):
         if self.localbox.do_heartbeat():
+            self.online = True
             Notifs().syncHeartbeatUp(self.name)
         else:
+            self.online = False
             Notifs().syncHeartbeatDown(self.name)
 
 
