@@ -19,6 +19,7 @@ from sync.gui.gui_utils import MAIN_FRAME_SIZE, MAIN_PANEL_SIZE, \
 from sync.gui.wizard import NewSyncWizard
 from sync.language import LANGUAGES
 from sync.localbox import LocalBox, InvalidLocalBoxPathError, get_localbox_path, remove_decrypted_files
+from sync.notif.notifs import Notifs
 
 
 class LocalBoxApp(wx.App):
@@ -282,7 +283,7 @@ class LocalboxPanel(LoxPanel):
 
     def on_btn_ping(self, wx_event):
         labels_to_sync = self.ctrl.selected()
-        self._main_syncing_thread.do_heartbeat(labels_to_sync)
+        Notifs().reqHeartbeats(labels_to_sync)
 
     def on_btn_add(self, wx_event):
         NewSyncWizard(self.ctrl, self.event)

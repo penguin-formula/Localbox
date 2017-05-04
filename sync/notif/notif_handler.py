@@ -88,6 +88,9 @@ class NotifHandler(Thread):
     def _publish_gui_heartbeat(self, msg):
         self._publish(notifs_util.zmq_gui_heartbeat, msg)
 
+    def _publish_heartbeat_req(self, msg):
+        self._publish(notifs_util.zmq_heartbeat_req, msg)
+
     # =========================================================================
     # Thread Operations
     # =========================================================================
@@ -97,6 +100,7 @@ class NotifHandler(Thread):
             getLogger(__name__).debug("stopping notifications thread")
             self._publish_gui_notif({ "cmd": "stop" })
             self._publish_gui_heartbeat({ "cmd": "stop" })
+            self._publish_heartbeat_req({ "cmd": "stop" })
             self.running = False
 
     # =========================================================================
@@ -104,7 +108,9 @@ class NotifHandler(Thread):
     # =========================================================================
 
     def handle_3xx(self, msg):
-        if msg['code'] == 300:
+        code = msg['code']
+
+        if code == 300:
             def delay_sync_start():
                 self._publish_gui_notif({ "title": "LocalBox", "message": "Sync Started" })
 
@@ -115,7 +121,7 @@ class NotifHandler(Thread):
             self.sync_start_delay.start()
             self.sync_start_time = time.time()
 
-        elif msg['code'] == 301:
+        elif code == 301:
             if self.sync_start_delay is not None and self.sync_start_delay.is_alive():
                 self.sync_start_delay.cancel()
                 self._publish_gui_notif({ "title": "LocalBox", "message": "Sync Made" })
@@ -125,12 +131,22 @@ class NotifHandler(Thread):
 
             # Else, don't show any messages
 
-        elif msg['code'] == 302:
+        elif code == 302:
+            labels = msg["labels"]
+
+            if len(labels) == 0:
+                self._publish_heartbeat_req({ "cmd": "full_heartbeat" })
+
+            else:
+                for label in labels:
+                    self._publish_heartbeat_req({ "cmd": "do_heartbeat", "label": label })
+
+        elif code == 303:
             message = "Sync \"{}\" is Online".format(msg["label"])
             self._publish_gui_notif({ "title": "LocalBox", "message": message })
             self._publish_gui_heartbeat({ "label": msg["label"], "online": True })
 
-        elif msg['code'] == 303:
+        elif code == 304:
             message = "Sync \"{}\" is Offline".format(msg["label"])
             self._publish_gui_notif({ "title": "LocalBox", "message": message })
             self._publish_gui_heartbeat({ "label": msg["label"], "online": False })

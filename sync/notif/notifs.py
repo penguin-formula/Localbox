@@ -55,19 +55,26 @@ class Notifs(object):
 
         self._send({ 'code': 301 })
 
+    def reqHeartbeats(self, labels):
+        """
+        TODO
+        """
+
+        self._send({ 'code': 302, 'labels': labels })
+
     def syncHeartbeatUp(self, label):
         """
         TODO
         """
 
-        self._send({ 'code': 302, 'label': label })
+        self._send({ 'code': 303, 'label': label })
 
     def syncHeartbeatDown(self, label):
         """
         TODO
         """
 
-        self._send({ 'code': 303, 'label': label })
+        self._send({ 'code': 304, 'label': label })
 
     # =========================================================================
     # File Changes
