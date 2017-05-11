@@ -110,15 +110,11 @@ class SyncItem:
     def __init__(self, label=None, url=None, status=None, path=None, direction=None, user=None, shares=None):
         self._label = label
         self._url = url
+        self._status = status if status is not None else "Initializing"
         self._path = path
         self._direction = direction
         self._user = user
         self._shares = shares if shares is not None else []
-
-        if status is None:
-            self._status = "Initializing"
-        else:
-            self._status = status
 
     @property
     def label(self):

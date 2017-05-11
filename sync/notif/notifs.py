@@ -55,27 +55,6 @@ class Notifs(object):
 
         self._send({ 'code': 301 })
 
-    def reqHeartbeats(self, labels):
-        """
-        TODO
-        """
-
-        self._send({ 'code': 302, 'labels': labels })
-
-    def syncHeartbeatUp(self, label):
-        """
-        TODO
-        """
-
-        self._send({ 'code': 303, 'label': label })
-
-    def syncHeartbeatDown(self, label):
-        """
-        TODO
-        """
-
-        self._send({ 'code': 304, 'label': label })
-
     # =========================================================================
     # File Changes
     # =========================================================================
@@ -99,6 +78,34 @@ class Notifs(object):
         self._send({ 'code': 401, 'file_name': file_name })
 
     # =========================================================================
+    # Heartbeat
+    # =========================================================================
+
+    def reqHeartbeats(self, labels, force_gui_notif=False):
+        """
+        Send a request to do a heartbeat right now to a specific set of labels.
+        If the list of labels is empty, the heartbeat will be a full heartbeat
+        """
+
+        self._send({ 'code':            500,
+                     'labels':          labels,
+                     'force_gui_notif': force_gui_notif })
+
+    def syncHeartbeatUp(self, label, force_gui_notif=False):
+        """
+        Notify that sync with the given label is up
+        """
+
+        self._send({ 'code': 501, 'label': label, 'force_gui_notif': force_gui_notif })
+
+    def syncHeartbeatDown(self, label):
+        """
+        Notify that sync with the given label is down
+        """
+
+        self._send({ 'code': 502, 'label': label })
+
+    # =========================================================================
     # Request File Operations
     # =========================================================================
 
@@ -118,7 +125,7 @@ class Notifs(object):
         self.notifs_sub.connect(notifs_util.zmq_ipc_pub)
 
         # Send request
-        self._send({ 'code': 500, 'data_dic': data_dic })
+        self._send({ 'code': 600, 'data_dic': data_dic })
 
         # Wait for the answer
         contents = self.notifs_sub.recv()

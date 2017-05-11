@@ -283,7 +283,7 @@ class LocalboxPanel(LoxPanel):
 
     def on_btn_ping(self, wx_event):
         labels_to_sync = self.ctrl.selected()
-        Notifs().reqHeartbeats(labels_to_sync)
+        Notifs().reqHeartbeats(labels_to_sync, force_gui_notif=True)
 
     def on_btn_add(self, wx_event):
         NewSyncWizard(self.ctrl, self.event)
