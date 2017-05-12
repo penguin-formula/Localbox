@@ -18,7 +18,7 @@ from sync.controllers.localbox_ctrl import SyncsController
 from sync.controllers.login_ctrl import LoginController
 from sync.defaults import LOCALBOX_SITES_PATH
 from sync.gui.gui_wx import Gui, LocalBoxApp
-from sync.gui.gui_notifs import GuiNotifs, EVT_NewGuiNotifs
+from sync.gui.gui_notifs import GuiNotifs, EVT_NewPopup
 from sync.__version__ import VERSION_STRING
 from sync.localbox import LocalBox
 from sync.notif.notifs import Notifs
@@ -92,7 +92,7 @@ class LocalBoxIcon(TaskBarIcon):
         # bind some events
         self.Bind(EVT_TASKBAR_LEFT_DOWN, self.OnTaskBarClick)
         self.Bind(EVT_TASKBAR_RIGHT_DOWN, self.OnTaskBarClick)
-        self.Bind(EVT_NewGuiNotifs, self.OnNewGuiNotifs)
+        self.Bind(EVT_NewPopup, self.OnNewGuiNotifs)
 
     def start_gui(self, event):  # pylint: disable=W0613
         """

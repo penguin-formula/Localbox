@@ -8,7 +8,6 @@ import os
 
 zmq_file_op_notif = "FILE_OP_NOTIF"
 zmq_gui_notif = "GUI_NOTIF"
-zmq_gui_heartbeat = "GUI_HEARTBEAT"
 zmq_heartbeat_req = "HEARTBEAT_REQ"
 
 if os.name == "posix":
