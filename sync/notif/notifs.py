@@ -106,6 +106,13 @@ class Notifs(object):
         self._send({ 'code': 502, 'label': label })
 
     # =========================================================================
+    # Notification from open file controller
+    # =========================================================================
+
+    def openfilesCtrl(self):
+        self._send({ 'code': 600 })
+
+    # =========================================================================
     # Request File Operations
     # =========================================================================
 
@@ -125,7 +132,7 @@ class Notifs(object):
         self.notifs_sub.connect(notifs_util.zmq_ipc_pub)
 
         # Send request
-        self._send({ 'code': 600, 'data_dic': data_dic })
+        self._send({ 'code': 700, 'data_dic': data_dic })
 
         # Wait for the answer
         contents = self.notifs_sub.recv()

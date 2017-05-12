@@ -79,6 +79,9 @@ class NotifHandler(Thread):
             elif code >= 600 and code < 700:
                 self.handle_6xx(msg)
 
+            elif code >= 700 and code < 800:
+                self.handle_7xx(msg)
+
         getLogger(__name__).debug("notifications thread stopped")
 
     def _publish(self, opt, msg):
@@ -292,10 +295,18 @@ class NotifHandler(Thread):
 
 
     # =========================================================================
-    # Request File Operations
+    # Notification from open file controller
     # =========================================================================
 
     def handle_6xx(self, msg):
         if msg['code'] == 600:
+            pass
+
+    # =========================================================================
+    # Request File Operations
+    # =========================================================================
+
+    def handle_7xx(self, msg):
+        if msg['code'] == 700:
             file_name = open_file(msg['data_dic'])
             self._publish_file_op_notif({'file_name': file_name})
