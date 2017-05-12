@@ -487,6 +487,24 @@ class LocalBox(object):
         # should be more robust then this
         return result
 
+    def do_heartbeat(self):
+        """
+        TODO
+        """
+        request = Request(url=self.url + 'lox_api/heartbeat')
+
+        result = False
+
+        try:
+            self._make_call(request)
+            result = True
+
+        except HTTPError as error:
+            pass
+            result = False
+
+        return result
+
     def decode_file(self, path, filename, passphrase):
         """
         decode a file

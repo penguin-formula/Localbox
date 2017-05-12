@@ -29,6 +29,7 @@ from sync.gui.taskbar import taskbarmain
 from sync.localbox import LocalBox
 from sync.syncer import MainSyncer
 from sync.notif.notif_handler import NotifHandler
+from sync.heartbeat import Heartbeat
 from sync.notif.notifs import Notifs
 from .defaults import LOG_PATH, APPDIR, SYNCINI_PATH
 from .controllers import openfiles_ctrl as openfiles_ctrl
@@ -57,6 +58,9 @@ def run_sync_daemon(observers=None):
 
         Notif = NotifHandler()
         Notif.start()
+
+        heartbeat = Heartbeat(MAIN)
+        heartbeat.start()
 
         taskbarmain(MAIN, observers)
     except Exception as error:  # pylint: disable=W0703

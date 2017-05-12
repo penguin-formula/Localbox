@@ -52,13 +52,12 @@ class GuiNotifs(threading.Thread):
         self.context = zmq.Context.instance()
 
     def run(self):
-        self.notifs_sub = self.context.socket(zmq.SUB)
-
-        self.notifs_sub.setsockopt(zmq.SUBSCRIBE, notifs_util.zmq_gui_notif)
-        self.notifs_sub.connect(notifs_util.zmq_ipc_pub)
+        self.notifs_sub_gui = self.context.socket(zmq.SUB)
+        self.notifs_sub_gui.setsockopt(zmq.SUBSCRIBE, notifs_util.zmq_gui_notif)
+        self.notifs_sub_gui.connect(notifs_util.zmq_ipc_pub)
 
         while True:
-            contents = self.notifs_sub.recv()
+            contents = self.notifs_sub_gui.recv()
             msg_str = notifs_util.demogrify(contents)
             msg = json.loads(msg_str)
 

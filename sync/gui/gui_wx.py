@@ -12,12 +12,14 @@ from sync.controllers.shares_ctrl import SharesController, ShareItem
 import sync.controllers.openfiles_ctrl as openfiles_ctrl
 from sync.defaults import DEFAULT_LANGUAGE
 from sync.gui import gui_utils
+from sync.gui.gui_heartbeat import GuiHeartbeat, EVT_NewGuiHeartbeat
 from sync.gui.event import EVT_POPULATE, PopulateThread
 from sync.gui.gui_utils import MAIN_FRAME_SIZE, MAIN_PANEL_SIZE, \
     MAIN_TITLE, DEFAULT_BORDER, PASSPHRASE_DIALOG_SIZE, PASSPHRASE_TITLE
 from sync.gui.wizard import NewSyncWizard
 from sync.language import LANGUAGES
 from sync.localbox import LocalBox, InvalidLocalBoxPathError, get_localbox_path, remove_decrypted_files
+from sync.notif.notifs import Notifs
 
 
 class LocalBoxApp(wx.App):
@@ -220,13 +222,20 @@ class LocalboxPanel(LoxPanel):
         # Make widgets
         self.btn_sync = wx.Button(self, label=_('Sync'), size=(100, 30))
         self.btn_rem = wx.Button(self, label=_('Clean'), size=(100, 30))
+        self.btn_ping = wx.Button(self, label=_('Ping'), size=(100, 30))
+
+        # Start thread to wait for heartbeat related notifications
+        self.gui_heartbeat = GuiHeartbeat(self)
+        self.gui_heartbeat.start()
 
         # Bind events
         self.Bind(wx.EVT_BUTTON, self.on_btn_sync, self.btn_sync)
         self.Bind(wx.EVT_BUTTON, self.on_btn_rem, self.btn_rem)
+        self.Bind(wx.EVT_BUTTON, self.on_btn_ping, self.btn_ping)
         self.Bind(wx.EVT_LIST_DELETE_ITEM, self._on_list_delete_item)
         self.Bind(wx.EVT_LIST_INSERT_ITEM, self._on_list_insert_item)
         self.Bind(wx.EVT_SHOW, self.on_show)
+        self.Bind(EVT_NewGuiHeartbeat, self.on_new_gui_heartbeat)
 
         # Layout
         self._DoLayout()
@@ -248,6 +257,7 @@ class LocalboxPanel(LoxPanel):
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
         hbox4.Add(self.btn_sync, 0, wx.EXPAND)
         hbox4.Add(self.btn_rem, 0, wx.EXPAND)
+        hbox4.Add(self.btn_ping, 0, wx.EXPAND)
         hbox4.Add((0, 0), 1, wx.EXPAND)
         hbox4.Add(self.btn_add, 0, wx.EXPAND)
         hbox4.Add(self.btn_del, 0, wx.EXPAND)
@@ -270,6 +280,10 @@ class LocalboxPanel(LoxPanel):
 
     def on_btn_rem(self, wx_event):
         remove_decrypted_files()
+
+    def on_btn_ping(self, wx_event):
+        labels_to_sync = self.ctrl.selected()
+        Notifs().reqHeartbeats(labels_to_sync, force_gui_notif=True)
 
     def on_btn_add(self, wx_event):
         NewSyncWizard(self.ctrl, self.event)
@@ -304,6 +318,10 @@ class LocalboxPanel(LoxPanel):
         # self.btn_rem.Enable(openfiles_ctrl.load() is not None)
 
         self.refresh()
+
+    def on_new_gui_heartbeat(self, wx_event):
+        msg = wx_event.getMsg()
+        self.ctrl.updateStatus(msg['label'], msg['online'])
 
     def refresh(self):
         self.btn_sync.Enable(self.ctrl.GetItemCount() > 0)
@@ -931,18 +949,20 @@ class LocalboxListCtrl(wx.ListCtrl):
         # Add three columns to the list
         self.InsertColumn(0, _("Label"))
         self.InsertColumn(1, _("Path"))
-        self.InsertColumn(2, _("URL"))
+        self.InsertColumn(2, _("Status"))
+        self.InsertColumn(3, _("URL"))
 
         self.SetColumnWidth(0, 100)
         self.SetColumnWidth(1, 250)
-        self.SetColumnWidth(2, 200)
+        self.SetColumnWidth(2, 100)
+        self.SetColumnWidth(3, 200)
 
     def populate_list(self):
         """
         Read the syncs list from the controller
         """
         for item in self.ctrl.load():
-            self.Append((item.label, item.path, item.url))
+            self.Append((item.label, item.path, item.status, item.url))
 
     def selected(self):
         idx = 0
@@ -958,7 +978,7 @@ class LocalboxListCtrl(wx.ListCtrl):
 
     def add(self, item):
         getLogger(__name__).debug('%s: Add item %s' % (self.__class__.__name__, item))
-        self.Append((item.label, item.path, item.url))
+        self.Append((item.label, item.path, item.status, item.url))
         self.ctrl.add(item)
 
     def delete(self):
@@ -986,6 +1006,16 @@ class LocalboxListCtrl(wx.ListCtrl):
         getLogger(__name__).info('%s: ctrl save()' % self.__class__.__name__)
         SharesController().save()
         self.ctrl.save()
+
+    def updateStatus(self, label, status):
+        for i in range(self.GetItemCount()):
+            item_label = self.GetItemText(i, 0)
+            item_text = self.GetItem(i, 2)
+
+            if item_label == label:
+                item_text.SetText("Online" if status else "Offline")
+                self.SetItem(item_text)
+                break
 
 
 class LoxListCtrl(wx.ListCtrl):
