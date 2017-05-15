@@ -101,5 +101,5 @@ class GuiNotifs(threading.Thread):
                 wx.PostEvent(self._parent, evt)
 
             elif msg["type"] == "openfile_ctrl":
-                evt = NewOpenfileCtrlEvent(NewOpenfileCtrlBind, -1, msg)
+                evt = NewOpenfileCtrlEvent(NewOpenfileCtrlBind, -1)
                 wx.PostEvent(self._parent, evt)

@@ -184,7 +184,7 @@ class Gui(wx.Frame):
     def on_new_gui_heartbeat(self, msg):
         self.panel_syncs.on_new_gui_heartbeat(msg)
 
-    def on_new_openfile_ctrl(self, wx_event):
+    def on_new_openfile_ctrl(self):
         self.panel_syncs.on_new_openfile_ctrl()
 
 
@@ -317,8 +317,6 @@ class LocalboxPanel(LoxPanel):
         self.ctrl.updateStatus(msg['label'], msg['online'])
 
     def on_new_openfile_ctrl(self):
-        print "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        print (openfiles_ctrl.load() is not None)
         self._on_rem_btn_refresh()
 
     def refresh(self):
@@ -326,9 +324,7 @@ class LocalboxPanel(LoxPanel):
         self._on_rem_btn_refresh()
 
     def _on_rem_btn_refresh(self):
-        print "========================================"
-        print (openfiles_ctrl.load() is not None)
-        self.btn_rem.Enable(openfiles_ctrl.load() is not None)
+        self.btn_rem.Enable(openfiles_ctrl.load() != {})
 
 
 class SharePanel(LoxPanel):
