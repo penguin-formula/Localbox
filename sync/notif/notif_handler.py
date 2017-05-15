@@ -113,6 +113,15 @@ class NotifHandler(Thread):
         msg_to_send["type"] = "heartbeat"
         self._publish(notifs_util.zmq_gui_notif, msg_to_send)
 
+    def _publish_gui_notif_openfile_ctrl(self, msg):
+        """
+        TODO
+        """
+
+        msg_to_send = msg.copy()
+        msg_to_send["type"] = "openfile_ctrl"
+        self._publish(notifs_util.zmq_gui_notif, msg_to_send)
+
     def _publish_file_op_notif(self, msg):
         """
         Only when a process requests a file to be opened
@@ -300,7 +309,7 @@ class NotifHandler(Thread):
 
     def handle_6xx(self, msg):
         if msg['code'] == 600:
-            pass
+            self._publish_gui_notif_openfile_ctrl({})
 
     # =========================================================================
     # Request File Operations

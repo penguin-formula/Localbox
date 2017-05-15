@@ -21,6 +21,9 @@ EVT_NewPopup = wx.PyEventBinder(NewPopupBind, 1)
 NewHeartbeatBind = wx.NewEventType()
 EVT_NewHeartbeat = wx.PyEventBinder(NewHeartbeatBind, 1)
 
+NewOpenfileCtrlBind = wx.NewEventType()
+EVT_NewOpenfileCtrl = wx.PyEventBinder(NewOpenfileCtrlBind, 1)
+
 
 class NewPopupEvent(wx.PyCommandEvent):
     """
@@ -42,6 +45,27 @@ class NewPopupEvent(wx.PyCommandEvent):
 
     def getMsg(self):
         return self.msg
+
+
+class NewHeartbeatEvent(wx.PyCommandEvent):
+    """
+    TODO
+    """
+
+    def __init__(self, etype, eid, msg):
+        wx.PyCommandEvent.__init__(self, etype, eid)
+        self.msg = msg
+
+    def getMsg(self):
+        return self.msg
+
+
+class NewOpenfileCtrlEvent(wx.PyCommandEvent):
+    """
+    TODO
+    """
+
+    pass
 
 
 class GuiNotifs(threading.Thread):
@@ -73,5 +97,9 @@ class GuiNotifs(threading.Thread):
                 wx.PostEvent(self._parent, evt)
 
             elif msg["type"] == "heartbeat":
-                evt = NewPopupEvent(NewHeartbeatBind, -1, msg)
+                evt = NewHeartbeatEvent(NewHeartbeatBind, -1, msg)
+                wx.PostEvent(self._parent, evt)
+
+            elif msg["type"] == "openfile_ctrl":
+                evt = NewOpenfileCtrlEvent(NewOpenfileCtrlBind, -1, msg)
                 wx.PostEvent(self._parent, evt)
