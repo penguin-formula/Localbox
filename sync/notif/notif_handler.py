@@ -291,6 +291,7 @@ class NotifHandler(Thread):
         # Heartbeat for a given sync returned an offline status
         elif code == 502:
             label = msg["label"]
+            force_gui_notif = msg["force_gui_notif"]
 
             def gui_n():
                 self._publish_gui_notif_heartbeat({ "label": label, "online": False })
@@ -301,7 +302,14 @@ class NotifHandler(Thread):
 
             if label not in self.label_online or self.label_online[label]:
                 self.label_online[label] = False
+                gui_h()
+                gui_n()
 
+            else:
+                if force_gui_notif:
+                    gui_n()
+
+                gui_h()
 
     # =========================================================================
     # Notification from open file controller

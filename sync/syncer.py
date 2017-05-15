@@ -275,7 +275,7 @@ class Syncer(object):
             Notifs().syncHeartbeatUp(self.name, force_gui_notif)
         else:
             self.online = False
-            Notifs().syncHeartbeatDown(self.name)
+            Notifs().syncHeartbeatDown(self.name, force_gui_notif)
 
 
 class SyncRunner(Thread):

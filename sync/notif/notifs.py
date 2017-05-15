@@ -98,12 +98,12 @@ class Notifs(object):
 
         self._send({ 'code': 501, 'label': label, 'force_gui_notif': force_gui_notif })
 
-    def syncHeartbeatDown(self, label):
+    def syncHeartbeatDown(self, label, force_gui_notif=False):
         """
         Notify that sync with the given label is down
         """
 
-        self._send({ 'code': 502, 'label': label })
+        self._send({ 'code': 502, 'label': label, 'force_gui_notif': force_gui_notif })
 
     # =========================================================================
     # Notification from open file controller
