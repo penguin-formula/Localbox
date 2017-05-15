@@ -1121,8 +1121,6 @@ class PassphraseDialog(wx.Dialog):
 
     def OnClickClose(self, wx_event):
         self.Destroy()
-        import sys
-        sys.exit(0)
 
     @staticmethod
     def show(username, label):
@@ -1208,9 +1206,3 @@ class ShareAddUserDialog(wx.Dialog):
     def OnClickClose(self, wx_event):
         self.parent.on_populate()
         self.Destroy()
-
-
-def ask_passphrase(username, site):
-    app = wx.App()
-    PassphraseDialog.show(username=username, label=site)
-    app.MainLoop()
