@@ -98,12 +98,19 @@ class Notifs(object):
 
         self._send({ 'code': 501, 'label': label, 'force_gui_notif': force_gui_notif })
 
-    def syncHeartbeatDown(self, label):
+    def syncHeartbeatDown(self, label, force_gui_notif=False):
         """
         Notify that sync with the given label is down
         """
 
-        self._send({ 'code': 502, 'label': label })
+        self._send({ 'code': 502, 'label': label, 'force_gui_notif': force_gui_notif })
+
+    # =========================================================================
+    # Notification from open file controller
+    # =========================================================================
+
+    def openfilesCtrl(self):
+        self._send({ 'code': 600 })
 
     # =========================================================================
     # Request File Operations
@@ -125,7 +132,7 @@ class Notifs(object):
         self.notifs_sub.connect(notifs_util.zmq_ipc_pub)
 
         # Send request
-        self._send({ 'code': 600, 'data_dic': data_dic })
+        self._send({ 'code': 700, 'data_dic': data_dic })
 
         # Wait for the answer
         contents = self.notifs_sub.recv()

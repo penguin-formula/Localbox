@@ -12,7 +12,7 @@ from sync.controllers.shares_ctrl import SharesController, ShareItem
 import sync.controllers.openfiles_ctrl as openfiles_ctrl
 from sync.defaults import DEFAULT_LANGUAGE
 from sync.gui import gui_utils
-from sync.gui.gui_heartbeat import GuiHeartbeat, EVT_NewGuiHeartbeat
+from sync.gui.gui_notifs import EVT_NewHeartbeat, EVT_NewOpenfileCtrl
 from sync.gui.event import EVT_POPULATE, PopulateThread
 from sync.gui.gui_utils import MAIN_FRAME_SIZE, MAIN_PANEL_SIZE, \
     MAIN_TITLE, DEFAULT_BORDER, PASSPHRASE_DIALOG_SIZE, PASSPHRASE_TITLE
@@ -181,6 +181,12 @@ class Gui(wx.Frame):
 
         self.Layout()
 
+    def on_new_gui_heartbeat(self, msg):
+        self.panel_syncs.on_new_gui_heartbeat(msg)
+
+    def on_new_openfile_ctrl(self):
+        self.panel_syncs.on_new_openfile_ctrl()
+
 
 # ----------------------------------- #
 # ----       MAIN PANELS         ---- #
@@ -224,10 +230,6 @@ class LocalboxPanel(LoxPanel):
         self.btn_rem = wx.Button(self, label=_('Clean'), size=(100, 30))
         self.btn_ping = wx.Button(self, label=_('Ping'), size=(100, 30))
 
-        # Start thread to wait for heartbeat related notifications
-        self.gui_heartbeat = GuiHeartbeat(self)
-        self.gui_heartbeat.start()
-
         # Bind events
         self.Bind(wx.EVT_BUTTON, self.on_btn_sync, self.btn_sync)
         self.Bind(wx.EVT_BUTTON, self.on_btn_rem, self.btn_rem)
@@ -235,7 +237,6 @@ class LocalboxPanel(LoxPanel):
         self.Bind(wx.EVT_LIST_DELETE_ITEM, self._on_list_delete_item)
         self.Bind(wx.EVT_LIST_INSERT_ITEM, self._on_list_insert_item)
         self.Bind(wx.EVT_SHOW, self.on_show)
-        self.Bind(EVT_NewGuiHeartbeat, self.on_new_gui_heartbeat)
 
         # Layout
         self._DoLayout()
@@ -310,21 +311,20 @@ class LocalboxPanel(LoxPanel):
         self.btn_sync.Enable(True)
 
     def on_show(self, wx_event):
-        # FIXME: The following needs the notification system in the client. The
-        # clean button should be enable when there are files, but there is no
-        # way to trigger this change without the openfiles_ctrl being able to
-        # push notifications elsewhere.
-        #
-        # self.btn_rem.Enable(openfiles_ctrl.load() is not None)
-
         self.refresh()
 
-    def on_new_gui_heartbeat(self, wx_event):
-        msg = wx_event.getMsg()
+    def on_new_gui_heartbeat(self, msg):
         self.ctrl.updateStatus(msg['label'], msg['online'])
+
+    def on_new_openfile_ctrl(self):
+        self._on_rem_btn_refresh()
 
     def refresh(self):
         self.btn_sync.Enable(self.ctrl.GetItemCount() > 0)
+        self._on_rem_btn_refresh()
+
+    def _on_rem_btn_refresh(self):
+        self.btn_rem.Enable(openfiles_ctrl.load() != {})
 
 
 class SharePanel(LoxPanel):

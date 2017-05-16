@@ -18,7 +18,7 @@ from sync.controllers.localbox_ctrl import SyncsController
 from sync.controllers.login_ctrl import LoginController
 from sync.defaults import LOCALBOX_SITES_PATH
 from sync.gui.gui_wx import Gui, LocalBoxApp
-from sync.gui.gui_notifs import GuiNotifs, EVT_NewGuiNotifs
+from sync.gui.gui_notifs import GuiNotifs, EVT_NewPopup, EVT_NewHeartbeat, EVT_NewOpenfileCtrl
 from sync.__version__ import VERSION_STRING
 from sync.localbox import LocalBox
 from sync.notif.notifs import Notifs
@@ -92,7 +92,9 @@ class LocalBoxIcon(TaskBarIcon):
         # bind some events
         self.Bind(EVT_TASKBAR_LEFT_DOWN, self.OnTaskBarClick)
         self.Bind(EVT_TASKBAR_RIGHT_DOWN, self.OnTaskBarClick)
-        self.Bind(EVT_NewGuiNotifs, self.OnNewGuiNotifs)
+        self.Bind(EVT_NewPopup, self.OnNewGuiNotifs)
+        self.Bind(EVT_NewHeartbeat, self.on_new_gui_heartbeat)
+        self.Bind(EVT_NewOpenfileCtrl, self.on_new_openfile_ctrl)
 
     def start_gui(self, event):  # pylint: disable=W0613
         """
@@ -197,6 +199,13 @@ class LocalBoxIcon(TaskBarIcon):
     def OnNewGuiNotifs(self, event):
         msg = event.getMsg()
         wxNotif(msg["title"], msg["message"]).Show()
+
+    def on_new_gui_heartbeat(self, event):
+        msg = event.getMsg()
+        self.frame.on_new_gui_heartbeat(msg)
+
+    def on_new_openfile_ctrl(self, event):
+        self.frame.on_new_openfile_ctrl()
 
 
 def is_first_run():

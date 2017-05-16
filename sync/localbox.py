@@ -597,6 +597,7 @@ def remove_decrypted_files():
             getLogger(__name__).error('could not remove file %s, %s' % (filename, ex))
 
     ctrl.save([])
+    Notifs().openfilesCtrl()
 
 
 class InvalidLocalboxURLError(Exception):
