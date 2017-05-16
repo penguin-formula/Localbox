@@ -307,9 +307,10 @@ class NotifHandler(Thread):
 
             else:
                 if force_gui_notif:
-                    gui_n()
+                    gui_h()
 
-                gui_h()
+                gui_n()
+
 
     # =========================================================================
     # Notification from open file controller
