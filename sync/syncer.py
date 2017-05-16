@@ -393,9 +393,31 @@ class MainSyncer(Thread):
         map(lambda s: s.stop_event.set(), filter(lambda s: not s.stop_event.is_set(), stop_this_threads))
 
     def do_heartbeat(self, labels=None, force_gui_notif=False):
-        for syncer in get_syncers():
-            if labels is None or labels == [] or syncer.name in labels:
-                syncer.do_heartbeat(force_gui_notif)
+        # for syncer in get_syncers():
+        #     if labels is None or labels == [] or syncer.name in labels:
+        #         syncer.do_heartbeat(force_gui_notif)
+
+        syncs_ctrl = SyncsController()
+
+        for sync_item in syncs_ctrl:
+            if labels is None or labels == [] or sync_item.label in labels:
+                url = sync_item.url
+                path = sync_item.path
+                direction = sync_item.direction
+                label = sync_item.label
+
+                try:
+                    localbox_client = LocalBox(url, label, path)
+                    results = localbox_client.do_heartbeat()
+
+                    if results:
+                        Notifs().syncHeartbeatUp(label, force_gui_notif)
+                    else:
+                        Notifs().syncHeartbeatDown(label, force_gui_notif)
+
+                except URLError as error:
+                    Notifs().syncHeartbeatDown(sync_item.label, force_gui_notif)
+
 
     def is_running(self):
         return self.waitevent.is_set()

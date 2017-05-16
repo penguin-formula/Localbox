@@ -68,7 +68,7 @@ class Heartbeat(Thread):
 
                 # The command may still be a request for a full heartbeat
                 elif msg["cmd"] == "full_heartbeat":
-                    self.fullHeartbeat()
+                    self.fullHeartbeat(msg['force_gui_notif'])
 
             # Else, this was a timeout and so do a full heartbeat
             else:
@@ -77,7 +77,7 @@ class Heartbeat(Thread):
     def labelHeartbeat(self, label, force_gui_notif=False):
         self.main_syncing_thread.do_heartbeat([label], force_gui_notif)
 
-    def fullHeartbeat(self):
-        self.main_syncing_thread.do_heartbeat()
+    def fullHeartbeat(self, force_gui_notif=False):
+        self.main_syncing_thread.do_heartbeat(force_gui_notif=force_gui_notif)
         self.last_full_heartbeat = time.time()
 

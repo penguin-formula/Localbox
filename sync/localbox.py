@@ -500,7 +500,6 @@ class LocalBox(object):
             result = True
 
         except HTTPError as error:
-            pass
             result = False
 
         return result
