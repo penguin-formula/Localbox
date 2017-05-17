@@ -143,7 +143,7 @@ class LocalBox(object):
         """
         do the meta call
         """
-        path_q = quote_plus(path)
+        path_q = os_utils.get_path_for_url(path)
         request = Request(url=self.url + 'lox_api/meta', data=dumps({'path': path_q}))
         getLogger(__name__).debug('calling lox_api/meta for path: %s' % path)
         try:
