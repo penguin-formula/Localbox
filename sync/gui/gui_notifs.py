@@ -27,8 +27,8 @@ EVT_NewOpenfileCtrl = wx.PyEventBinder(NewOpenfileCtrlBind, 1)
 
 class NewPopupEvent(wx.PyCommandEvent):
     """
-    New GUI notifications event. This event is triggered whenever new
-    notifications arrive from the NotifsHandler module.
+    New popup event. This event is triggered whenever a new gui popup should be
+    displayed to the user.
 
     This event has the `msg` attribute which is a dictionary like:
 
@@ -36,7 +36,8 @@ class NewPopupEvent(wx.PyCommandEvent):
           "message": "Message of the notification"
         }
 
-    The dictionary is accessible with method `getMsg`.
+    The dictionary is accessible with method `getMsg`. The title and message
+    are the actual title and message of the popup.
     """
 
     def __init__(self, etype, eid, msg):
@@ -49,7 +50,14 @@ class NewPopupEvent(wx.PyCommandEvent):
 
 class NewHeartbeatEvent(wx.PyCommandEvent):
     """
-    TODO
+    A heartbeat may need to notify the GUI that a sync went down or came back
+    online. This event is used for that.
+
+    The message contains:
+
+        { "label": "Label identifying the sync",
+          "online": True | False
+        }
     """
 
     def __init__(self, etype, eid, msg):
@@ -62,7 +70,7 @@ class NewHeartbeatEvent(wx.PyCommandEvent):
 
 class NewOpenfileCtrlEvent(wx.PyCommandEvent):
     """
-    TODO
+    Event triggered every file the open file controller adds or removes a file
     """
 
     pass

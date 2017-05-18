@@ -9,16 +9,18 @@ from sync.notif.notifs import Notifs
 from sync.notif import notifs_util
 
 
-heartbeat_period = 60 * 30 # Half hour periods
+heartbeat_period = 60 * 10 # Every ten minutes
 
 
 class Heartbeat(Thread):
     """
     This thread monitors the status of the servers by sending heartbeat
     requests given a certain period of time. The thread also waits for explicit
-    requests for heartbeat.
+    requests for heartbeat
 
-    TODO: Explain that the main heartbeat cycle never stops.
+    An explicit request may be done to one, several, or all syncs. If the
+    request is done to all syncs, then that waiting period for the next full
+    sync is reseated
     """
 
     def __init__(self, main_syncing_thread):
@@ -44,6 +46,9 @@ class Heartbeat(Thread):
         # Keep timing of requests
         self.last_full_heartbeat = time.time()
         self.running = True
+
+        # Start by doing a full heartbeat
+        self.fullHeartbeat()
 
         while self.running:
             # Set time to wait

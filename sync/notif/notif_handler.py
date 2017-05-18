@@ -96,8 +96,9 @@ class NotifHandler(Thread):
 
     def _publish_gui_notif_popup(self, msg):
         """
-        Publishes a notification for the GUI. These notifications are always
-        shown by the GUI and should be seen by the user
+        Publishes a notification for the GUI to display a popup. These
+        notifications are always shown by the GUI and should be seen by the
+        user
         """
 
         msg_to_send = msg.copy()
@@ -106,7 +107,8 @@ class NotifHandler(Thread):
 
     def _publish_gui_notif_heartbeat(self, msg):
         """
-        TODO
+        Every time the GUI needs to be notified about a heartbeat event, this
+        message is published
         """
 
         msg_to_send = msg.copy()
@@ -115,7 +117,8 @@ class NotifHandler(Thread):
 
     def _publish_gui_notif_openfile_ctrl(self, msg):
         """
-        TODO
+        When a file is added or removed from the open file controller, this
+        message is published
         """
 
         msg_to_send = msg.copy()

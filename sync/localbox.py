@@ -489,7 +489,11 @@ class LocalBox(object):
 
     def do_heartbeat(self):
         """
-        TODO
+        The sync will perform a heartbeat operation by requesting the heartbeat
+        route from the backend
+
+        If the heartbeat is successful, method returns True. If the call
+        returns a 404 or if the server can't be reached, return False
         """
         request = Request(url=self.url + 'lox_api/heartbeat')
 

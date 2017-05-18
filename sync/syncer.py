@@ -393,10 +393,6 @@ class MainSyncer(Thread):
         map(lambda s: s.stop_event.set(), filter(lambda s: not s.stop_event.is_set(), stop_this_threads))
 
     def do_heartbeat(self, labels=None, force_gui_notif=False):
-        # for syncer in get_syncers():
-        #     if labels is None or labels == [] or syncer.name in labels:
-        #         syncer.do_heartbeat(force_gui_notif)
-
         syncs_ctrl = SyncsController()
 
         for sync_item in syncs_ctrl:

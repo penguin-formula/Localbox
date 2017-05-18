@@ -268,8 +268,6 @@ class LocalboxPanel(LoxPanel):
 
         self.SetSizer(vbox)
 
-        # FIXME:
-        # self.btn_rem.Enable(False)
         self.btn_del.Enable(False)
 
         self.refresh()
