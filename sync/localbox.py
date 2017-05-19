@@ -194,7 +194,7 @@ class LocalBox(object):
         """
         do the delete call
         """
-        metapath = urlencode({'path': localbox_path})
+        metapath = urlencode({'path': localbox_path.encode('utf8')})
         request = Request(url=self.url + 'lox_api/operations/delete/',
                           data=metapath)
         try:
@@ -227,7 +227,7 @@ class LocalBox(object):
         :param remove: whether or not to remove the plain text file
         :return:
         """
-        metapath = quote_plus(path)
+        metapath = os_utils.get_path_for_url(path)
 
         try:
             # read plain file
