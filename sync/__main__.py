@@ -81,6 +81,7 @@ def run_file_decryption(filename):
 
         localbox_client = None
         localbox_filename = None
+        filename = filename.decode('utf-8')
         for sync_item in sync_list:
             getLogger(__name__).debug('sync path: %s' % sync_item.path)
             sync_path = sync_item.path if sync_item.path.endswith('/') else sync_item.path + os.path.sep
