@@ -143,8 +143,8 @@ class LocalBox(object):
         """
         do the meta call
         """
-        path_q = os_utils.get_path_for_url(path)
-        request = Request(url=self.url + 'lox_api/meta', data=dumps({'path': path_q}))
+        #path_q = os_utils.get_path_for_url(path)
+        request = Request(url=self.url + 'lox_api/meta', data=dumps({'path': path}))
         getLogger(__name__).debug('calling lox_api/meta for path: %s' % path)
         try:
             result = self._make_call(request)
@@ -181,7 +181,7 @@ class LocalBox(object):
         :return: key, iv if directory is "root parent", else None
         """
         getLogger(__name__).debug("Creating directory: %s" % path)
-        metapath = urlencode({'path': path})
+        metapath = urlencode({'path': path.encode('utf8')})
         request = Request(url=self.url + 'lox_api/operations/create_folder/',
                           data=metapath)
         try:
@@ -335,7 +335,7 @@ class LocalBox(object):
             raise InvalidPassphraseError
         pgp_client = gpg()
         keys_path = os_utils.get_keys_path(localbox_path)
-        keys_path = quote_plus(keys_path)
+        keys_path = quote_plus(keys_path.encode('utf8'))
         getLogger(__name__).debug("call lox_api/key on localbox_path %s = %s", localbox_path, keys_path)
 
         request = Request(url=self.url + 'lox_api/key/' + keys_path)
@@ -467,21 +467,20 @@ class LocalBox(object):
         :return:
         """
         cryptopath = os_utils.get_keys_path(path)
-        cryptopath = quote_plus(cryptopath)
-
         getLogger(__name__).debug('saving key for %s', cryptopath)
 
         site = self.authenticator.label
 
         pgpclient = gpg()
         encodedata = {
+            'cryptopath': cryptopath,
             'key': b64encode(pgpclient.encrypt(key, site, user)),
             'iv': b64encode(pgpclient.encrypt(iv, site, user)),
             'user': user
         }
         data = dumps(encodedata)
         request = Request(
-            url=self.url + 'lox_api/key/' + cryptopath, data=data)
+            url=self.url + 'lox_api/key/', data=data)
         result = self._make_call(request)
         # NOTE: this is just the result of the last call, not all of them.
         # should be more robust then this

@@ -67,7 +67,7 @@ class Syncer(object):
         :return:
         """
         path = metavfs_entry.path.split('/')
-        return join(self.filepath, *path)
+        return join(self.filepath.encode('utf8'), *path)
 
     def populate_localbox_metadata(self, path='/', parent=None):
         self._should_stop_sync()
