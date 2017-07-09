@@ -227,7 +227,7 @@ class LocalBox(object):
         :param remove: whether or not to remove the plain text file
         :return:
         """
-        metapath = os_utils.get_path_for_url(path)
+        metapath = path.encode('utf8')
 
         try:
             # read plain file
