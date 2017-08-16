@@ -162,7 +162,7 @@ class LocalBox(object):
         do the file call
         """
         metapath = quote_plus(path).strip('/')
-        request = Request(url=self.url + "lox_api/files", data=dumps({'path': metapath}))
+        request = Request(url=self.url + "lox_api/files", data=dumps({'path': path}))
         webdata = self._make_call(request)
         websize = webdata.headers.get('content-length', -1)
         data = webdata.read()
@@ -373,10 +373,11 @@ class LocalBox(object):
         """
         if localbox_path.startswith('/'):
             localbox_path = localbox_path[1:]
-        data = dict()
-        data['identities'] = user_list
-
-        request = Request(url=self.url + 'lox_api/share_create/' + quote_plus(localbox_path), data=dumps(data))
+        data = {
+            'identities': user_list,
+            'path': localbox_path
+        }
+        request = Request(url=self.url + 'lox_api/share_create/', data=dumps(data))
 
         try:
             result = self._make_call(request).read()
