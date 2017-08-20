@@ -143,7 +143,6 @@ class LocalBox(object):
         """
         do the meta call
         """
-        #path_q = os_utils.get_path_for_url(path)
         request = Request(url=self.url + 'lox_api/meta', data=dumps({'path': path}))
         getLogger(__name__).debug('calling lox_api/meta for path: %s' % path)
         try:
@@ -161,7 +160,6 @@ class LocalBox(object):
         """
         do the file call
         """
-        metapath = quote_plus(path).strip('/')
         request = Request(url=self.url + "lox_api/files", data=dumps({'path': path}))
         webdata = self._make_call(request)
         websize = webdata.headers.get('content-length', -1)
