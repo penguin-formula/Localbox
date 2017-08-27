@@ -146,8 +146,8 @@ class NotifHandler(Thread):
     def handle_1xx(self, msg):
         if msg['code'] == 100:
             getLogger(__name__).debug("stopping notifications thread")
-            self._publish(notifs_util.zmq_gui_notif, { "type": "cmd", "cmd": "stop" })
-            self._publish_heartbeat_req({ "cmd": "stop" })
+            self._publish(notifs_util.zmq_gui_notif, {"type": "cmd", "cmd": "stop"})
+            self._publish_heartbeat_req({"cmd": "stop"})
             self.running = False
 
     # =========================================================================
@@ -159,7 +159,7 @@ class NotifHandler(Thread):
 
         if code == 300:
             def delay_sync_start():
-                self._publish_gui_notif_popup({ "title": "LocalBox", "message": "Sync Started" })
+                self._publish_gui_notif_popup({"title": "LocalBox", "message": "Sync Started"})
 
             if self.sync_start_delay is not None and self.sync_start_delay.is_alive():
                 self.sync_start_delay.cancel()
@@ -171,12 +171,12 @@ class NotifHandler(Thread):
         elif code == 301:
             if self.sync_start_delay is not None and self.sync_start_delay.is_alive():
                 self.sync_start_delay.cancel()
-                self._publish_gui_notif_popup({ "title": "LocalBox", "message": "Sync Made" })
+                self._publish_gui_notif_popup({"title": "LocalBox", "message": "Sync Made"})
 
             elif time.time() > self.sync_start_time + config.sync_delay:
-                self._publish_gui_notif_popup({ "title": "LocalBox", "message": "Sync Stopped" })
+                self._publish_gui_notif_popup({"title": "LocalBox", "message": "Sync Stopped"})
 
-            # Else, don't show any messages
+                # Else, don't show any messages
 
     # =========================================================================
     # File Changes
@@ -184,19 +184,20 @@ class NotifHandler(Thread):
 
     def handle_4xx(self, msg):
         def file_op_up(file_name):
-            self._publish_gui_notif_popup({ "title": "LocalBox", "message": "Uploaded file {}".format(file_name) })
+            self._publish_gui_notif_popup(
+                {"title": "LocalBox", "message": "Uploaded file {}".format(file_name.encode('utf8'))})
 
         def file_op_del(file_name):
-            self._publish_gui_notif_popup({ "title": "LocalBox", "message": "Deleted file {}".format(file_name) })
+            self._publish_gui_notif_popup({"title": "LocalBox", "message": "Deleted file {}".format(file_name)})
 
         def file_op_many_up(count):
-            self._publish_gui_notif_popup({ "title": "LocalBox", "message": "Uploaded {} files".format(count) })
+            self._publish_gui_notif_popup({"title": "LocalBox", "message": "Uploaded {} files".format(count)})
 
         def file_op_many_down(count):
-            self._publish_gui_notif_popup({ "title": "LocalBox", "message": "Deleted {} files".format(count) })
+            self._publish_gui_notif_popup({"title": "LocalBox", "message": "Deleted {} files".format(count)})
 
         def file_op_changes(count):
-            self._publish_gui_notif_popup({ "title": "LocalBox", "message": "Changed {} files".format(count) })
+            self._publish_gui_notif_popup({"title": "LocalBox", "message": "Changed {} files".format(count)})
 
         code = msg['code']
 
@@ -257,13 +258,13 @@ class NotifHandler(Thread):
 
             # If no labels were given, do a full heartbeat request
             if len(labels) == 0:
-                msg_s = { "cmd": "full_heartbeat", "force_gui_notif": force_gui_notif }
+                msg_s = {"cmd": "full_heartbeat", "force_gui_notif": force_gui_notif}
                 self._publish_heartbeat_req(msg_s)
 
             # Else, do heartbeat only to a few syncs
             else:
                 for label in labels:
-                    msg_s = { "cmd": "do_heartbeat", "label": label, "force_gui_notif": force_gui_notif }
+                    msg_s = {"cmd": "do_heartbeat", "label": label, "force_gui_notif": force_gui_notif}
                     self._publish_heartbeat_req(msg_s)
 
         # Heartbeat for a given sync returned an online status
@@ -272,11 +273,11 @@ class NotifHandler(Thread):
             force_gui_notif = msg["force_gui_notif"]
 
             def gui_h():
-                self._publish_gui_notif_heartbeat({ "label": label, "online": True })
+                self._publish_gui_notif_heartbeat({"label": label, "online": True})
 
             def gui_n():
                 message = "Sync \"{}\" is Online".format(label)
-                self._publish_gui_notif_popup({ "title": "LocalBox", "message": message })
+                self._publish_gui_notif_popup({"title": "LocalBox", "message": message})
 
             # If the sync of the given label was offline, then set it to be online and notify user
             if label not in self.label_online:
@@ -297,11 +298,11 @@ class NotifHandler(Thread):
             force_gui_notif = msg["force_gui_notif"]
 
             def gui_n():
-                self._publish_gui_notif_heartbeat({ "label": label, "online": False })
+                self._publish_gui_notif_heartbeat({"label": label, "online": False})
 
             def gui_h():
                 message = "Sync \"{}\" is Offline".format(label)
-                self._publish_gui_notif_popup({ "title": "LocalBox", "message": message })
+                self._publish_gui_notif_popup({"title": "LocalBox", "message": message})
 
             if label not in self.label_online or self.label_online[label]:
                 self.label_online[label] = False
@@ -313,7 +314,6 @@ class NotifHandler(Thread):
                     gui_h()
 
                 gui_n()
-
 
     # =========================================================================
     # Notification from open file controller

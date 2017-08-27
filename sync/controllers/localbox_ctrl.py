@@ -134,7 +134,11 @@ class SyncItem:
 
     @property
     def status(self):
-        return self._status
+        if hasattr(self, '_status'):
+            return self._status
+        else:
+            self._status = 'Initialing'
+            return self._status
 
     @status.setter
     def status(self, value):

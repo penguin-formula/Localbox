@@ -67,7 +67,7 @@ class Syncer(object):
         :return:
         """
         path = metavfs_entry.path.split('/')
-        return join(self.filepath, *path)
+        return join(self.filepath.encode('utf8'), *path)
 
     def populate_localbox_metadata(self, path='/', parent=None):
         self._should_stop_sync()
@@ -143,7 +143,7 @@ class Syncer(object):
     def download(self, path):
         contents = self.localbox.get_file(path)
         if contents is not None:
-            localfilename_noext = join(self.filepath, path[1:])
+            localfilename_noext = join(self.filepath, path[1:].decode('utf8'))
             localfilename = localfilename_noext + defaults.LOCALBOX_EXTENSION
             # precreate folder if needed
             localdirname = dirname(localfilename)
