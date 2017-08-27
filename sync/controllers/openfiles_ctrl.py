@@ -4,6 +4,7 @@ from os.path import exists, isfile
 
 from loxcommon import os_utils
 from sync.defaults import LOCALBOX_OPENFILES
+from sync.notif.notifs import Notifs
 
 
 def add(filename):
@@ -14,6 +15,7 @@ def add(filename):
     if not filename in openfiles_list and exists(filename):
         openfiles_list[filename] = os_utils.hash_file(filename)
     save(openfiles_list)
+    Notifs().openfilesCtrl()
 
 
 def remove(filesystem_path):
@@ -23,6 +25,7 @@ def remove(filesystem_path):
         save(openfiles_list)
     elif isfile(filesystem_path):
         getLogger(__name__).error('%s was not found in the list of opened files' % filesystem_path)
+    Notifs().openfilesCtrl()
 
 
 def save(openfiles_list):

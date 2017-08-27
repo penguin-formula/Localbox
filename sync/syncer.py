@@ -45,6 +45,7 @@ class Syncer(object):
         self.localbox_metadata = None
         self.filepath_metadata = None
         self.direction = direction
+        self.online = False
         self._stop_event = None
 
     @property
@@ -66,7 +67,7 @@ class Syncer(object):
         :return:
         """
         path = metavfs_entry.path.split('/')
-        return join(self.filepath, *path)
+        return join(self.filepath.encode('utf8'), *path)
 
     def populate_localbox_metadata(self, path='/', parent=None):
         self._should_stop_sync()
@@ -142,7 +143,7 @@ class Syncer(object):
     def download(self, path):
         contents = self.localbox.get_file(path)
         if contents is not None:
-            localfilename_noext = join(self.filepath, path[1:])
+            localfilename_noext = join(self.filepath, path[1:].decode('utf8'))
             localfilename = localfilename_noext + defaults.LOCALBOX_EXTENSION
             # precreate folder if needed
             localdirname = dirname(localfilename)
@@ -268,6 +269,14 @@ class Syncer(object):
         self.populate_filepath_metadata(path='./', parent=None)
         self.filepath_metadata.save(OLD_SYNC_STATUS + self.name)
 
+    def do_heartbeat(self, force_gui_notif=False):
+        if self.localbox.do_heartbeat():
+            self.online = True
+            Notifs().syncHeartbeatUp(self.name, force_gui_notif)
+        else:
+            self.online = False
+            Notifs().syncHeartbeatDown(self.name, force_gui_notif)
+
 
 class SyncRunner(Thread):
     """
@@ -382,6 +391,29 @@ class MainSyncer(Thread):
             stop_this_threads = self._thread_pool.values()
 
         map(lambda s: s.stop_event.set(), filter(lambda s: not s.stop_event.is_set(), stop_this_threads))
+
+    def do_heartbeat(self, labels=None, force_gui_notif=False):
+        syncs_ctrl = SyncsController()
+
+        for sync_item in syncs_ctrl:
+            if labels is None or labels == [] or sync_item.label in labels:
+                url = sync_item.url
+                path = sync_item.path
+                direction = sync_item.direction
+                label = sync_item.label
+
+                try:
+                    localbox_client = LocalBox(url, label, path)
+                    results = localbox_client.do_heartbeat()
+
+                    if results:
+                        Notifs().syncHeartbeatUp(label, force_gui_notif)
+                    else:
+                        Notifs().syncHeartbeatDown(label, force_gui_notif)
+
+                except URLError as error:
+                    Notifs().syncHeartbeatDown(sync_item.label, force_gui_notif)
+
 
     def is_running(self):
         return self.waitevent.is_set()

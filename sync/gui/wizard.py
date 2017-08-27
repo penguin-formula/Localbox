@@ -13,9 +13,9 @@ except:
                         EVT_WIZARD_PAGE_CHANGED)
 
 try:
-    from httplib import BadStatusLine
+    from httplib import BadStatusLine, InvalidURL
 except:
-    from http.client import BadStatusLine
+    from http.client import BadStatusLine, InvalidURL
 
 from logging import getLogger
 
@@ -168,12 +168,18 @@ class NewSyncInputsWizardPage(WizardPageSimple):
             return
 
         # Create a localbox instance
-        # TODO: Errors in here need to be clarified
         try:
             self.parent.localbox_client = LocalBox(url, label, path)
 
-        except (URLError, BadStatusLine, ValueError,
-                auth.AlreadyAuthenticatedError) as error:
+        except (URLError, InvalidURL, ValueError) as error:
+            getLogger(__name__).debug("Can't access server")
+            gui_utils.show_error_dialog(
+                message=_('Can\'t connect to server given by URL'),
+                title=_('Can\'t connect to server'))
+            event.Veto()
+            return
+
+        except (BadStatusLine, auth.AlreadyAuthenticatedError) as error:
             getLogger(__name__).debug("error with authentication url thingie")
             getLogger(__name__).exception(error)
 
