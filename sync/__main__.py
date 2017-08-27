@@ -2,15 +2,11 @@
 main module for localbox sync
 """
 import os
-import pickle
 import signal
-import json
-import urllib
-import urllib2
+import sys
 from logging import getLogger, ERROR
 from os import makedirs, mkdir
 from os.path import dirname, isdir, exists
-from sys import argv
 from threading import Event
 
 import sync.__version__
@@ -18,20 +14,18 @@ from loxcommon import os_utils
 from loxcommon.log import prepare_logging
 from loxcommon.os_utils import open_file_ext
 from sync import defaults
-from sync.controllers import openfiles_ctrl
 from sync.controllers.localbox_ctrl import ctrl as sync_ctrl, SyncsController
-from sync.controllers.login_ctrl import LoginController
 from sync.database import database_execute, DatabaseError
 from sync.event_handler import create_watchdog
 from sync.gui import gui_utils
-from sync.gui import gui_wx
 from sync.gui.taskbar import taskbarmain
+from sync.heartbeat import Heartbeat
 from sync.localbox import LocalBox
-from sync.syncer import MainSyncer
 from sync.notif.notif_handler import NotifHandler
 from sync.notif.notifs import Notifs
-from .defaults import LOG_PATH, APPDIR, SYNCINI_PATH
+from sync.syncer import MainSyncer
 from .controllers import openfiles_ctrl as openfiles_ctrl
+from .defaults import LOG_PATH, APPDIR, SYNCINI_PATH
 
 try:
     from ConfigParser import ConfigParser, SafeConfigParser
@@ -46,6 +40,11 @@ except ImportError:
 
     raw_input = input  # pylint: disable=W0622,C0103
 
+try:
+    import win32_unicode_argv
+except ImportError:
+    pass
+
 
 def run_sync_daemon(observers=None):
     try:
@@ -57,6 +56,9 @@ def run_sync_daemon(observers=None):
 
         Notif = NotifHandler()
         Notif.start()
+
+        heartbeat = Heartbeat(MAIN)
+        heartbeat.start()
 
         taskbarmain(MAIN, observers)
     except Exception as error:  # pylint: disable=W0703
@@ -77,6 +79,12 @@ def run_file_decryption(filename):
 
         localbox_client = None
         localbox_filename = None
+        try:
+            filename = filename.decode('utf-8')
+        except UnicodeEncodeError:
+            # on purpose, it's already an utf-8 string
+            pass
+
         for sync_item in sync_list:
             getLogger(__name__).debug('sync path: %s' % sync_item.path)
             sync_path = sync_item.path if sync_item.path.endswith('/') else sync_item.path + os.path.sep
@@ -150,9 +158,8 @@ if __name__ == '__main__':
         database_execute(sql)
         getLogger(__name__).debug('TOKEN column added to table SITES')
 
-    if len(argv) > 1:
-        filename = argv[1]
-        filename = ' '.join(argv[1:])
+    if len(sys.argv) > 1:
+        filename = ' '.join(sys.argv[1:])
 
         run_file_decryption(filename)
     else:

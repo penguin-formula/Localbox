@@ -18,7 +18,7 @@ from sync.controllers.localbox_ctrl import SyncsController
 from sync.controllers.login_ctrl import LoginController
 from sync.defaults import LOCALBOX_SITES_PATH
 from sync.gui.gui_wx import Gui, LocalBoxApp
-from sync.gui.gui_notifs import GuiNotifs, EVT_NewGuiNotifs
+from sync.gui.gui_notifs import GuiNotifs, EVT_NewPopup, EVT_NewHeartbeat, EVT_NewOpenfileCtrl
 from sync.__version__ import VERSION_STRING
 from sync.localbox import LocalBox
 from sync.notif.notifs import Notifs
@@ -92,7 +92,9 @@ class LocalBoxIcon(TaskBarIcon):
         # bind some events
         self.Bind(EVT_TASKBAR_LEFT_DOWN, self.OnTaskBarClick)
         self.Bind(EVT_TASKBAR_RIGHT_DOWN, self.OnTaskBarClick)
-        self.Bind(EVT_NewGuiNotifs, self.OnNewGuiNotifs)
+        self.Bind(EVT_NewPopup, self.OnNewGuiNotifs)
+        self.Bind(EVT_NewHeartbeat, self.on_new_gui_heartbeat)
+        self.Bind(EVT_NewOpenfileCtrl, self.on_new_openfile_ctrl)
 
     def start_gui(self, event):  # pylint: disable=W0613
         """
@@ -198,77 +200,12 @@ class LocalBoxIcon(TaskBarIcon):
         msg = event.getMsg()
         wxNotif(msg["title"], msg["message"]).Show()
 
+    def on_new_gui_heartbeat(self, event):
+        msg = event.getMsg()
+        self.frame.on_new_gui_heartbeat(msg)
 
-# This class will handles any incoming request from
-# the browser
-class OpenFileHandler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        service = self.get_service()
-
-        if service == "open_file":
-            self.open_file()
-
-        # IF the service wasn't found, just return 404
-        else:
-            getLogger(__name__).info('request "{}" couldn\'t be handled'.format(service))
-            self.send_response(404)
-
-    def open_file(self):
-        # Get request data
-        content_len = int(self.headers.getheader('content-length', 0))
-        post_body = self.rfile.read(content_len)
-        data_dic = json.loads(post_body)
-
-        # Get passphrase
-        passphrase = LoginController().get_passphrase(data_dic["label"])
-
-        # Stat local box instance
-        localbox_client = LocalBox(data_dic["url"], data_dic["label"], "")
-
-        # Attempt to decode the file
-        try:
-            decoded_contents = localbox_client.decode_file(
-                data_dic["localbox_filename"],
-                data_dic["filename"],
-                passphrase)
-
-        # If there was a failure, answer wit ha 404 to state that the file doesn't exist
-        except URLError:
-            gui_utils.show_error_dialog(_('Failed to decode contents'), 'Error', standalone=True)
-            getLogger(__name__).info('failed to decode contents. aborting')
-
-            self.send_response(404)
-            return
-
-        # If the file was decoded, write it to disk
-        tmp_decoded_filename = \
-            os_utils.remove_extension(data_dic["filename"],
-                                      defaults.LOCALBOX_EXTENSION)
-
-        getLogger(__name__).info('tmp_decoded_filename: %s' % tmp_decoded_filename)
-
-        if os.path.exists(tmp_decoded_filename):
-            os.remove(tmp_decoded_filename)
-
-        localfile = open(tmp_decoded_filename, 'wb')
-        localfile.write(decoded_contents)
-        localfile.close()
-
-        # Answer by sending the temporary file name, which is needed so it can be deleted later
-        self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
-        self.end_headers()
-        self.wfile.write(tmp_decoded_filename)
-
-        # Keep file in list of opened files
-        openfiles_ctrl.add(tmp_decoded_filename)
-
-    def get_service(self):
-        path = self.path
-        if path.startswith('/'):
-            path = path[1:]
-
-        return path.split('/')[0]
+    def on_new_openfile_ctrl(self, event):
+        self.frame.on_new_openfile_ctrl()
 
 
 def is_first_run():

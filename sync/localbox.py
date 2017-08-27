@@ -143,8 +143,7 @@ class LocalBox(object):
         """
         do the meta call
         """
-        path_q = quote_plus(path)
-        request = Request(url=self.url + 'lox_api/meta', data=dumps({'path': path_q}))
+        request = Request(url=self.url + 'lox_api/meta', data=dumps({'path': path}))
         getLogger(__name__).debug('calling lox_api/meta for path: %s' % path)
         try:
             result = self._make_call(request)
@@ -161,8 +160,7 @@ class LocalBox(object):
         """
         do the file call
         """
-        metapath = quote_plus(path).strip('/')
-        request = Request(url=self.url + "lox_api/files", data=dumps({'path': metapath}))
+        request = Request(url=self.url + "lox_api/files", data=dumps({'path': path}))
         webdata = self._make_call(request)
         websize = webdata.headers.get('content-length', -1)
         data = webdata.read()
@@ -181,7 +179,7 @@ class LocalBox(object):
         :return: key, iv if directory is "root parent", else None
         """
         getLogger(__name__).debug("Creating directory: %s" % path)
-        metapath = urlencode({'path': path})
+        metapath = urlencode({'path': path.encode('utf8')})
         request = Request(url=self.url + 'lox_api/operations/create_folder/',
                           data=metapath)
         try:
@@ -194,7 +192,7 @@ class LocalBox(object):
         """
         do the delete call
         """
-        metapath = urlencode({'path': localbox_path})
+        metapath = urlencode({'path': localbox_path.encode('utf8')})
         request = Request(url=self.url + 'lox_api/operations/delete/',
                           data=metapath)
         try:
@@ -227,7 +225,7 @@ class LocalBox(object):
         :param remove: whether or not to remove the plain text file
         :return:
         """
-        metapath = quote_plus(path)
+        metapath = path.encode('utf8')
 
         try:
             # read plain file
@@ -335,7 +333,7 @@ class LocalBox(object):
             raise InvalidPassphraseError
         pgp_client = gpg()
         keys_path = os_utils.get_keys_path(localbox_path)
-        keys_path = quote_plus(keys_path)
+        keys_path = quote_plus(keys_path.encode('utf8'))
         getLogger(__name__).debug("call lox_api/key on localbox_path %s = %s", localbox_path, keys_path)
 
         request = Request(url=self.url + 'lox_api/key/' + keys_path)
@@ -373,10 +371,11 @@ class LocalBox(object):
         """
         if localbox_path.startswith('/'):
             localbox_path = localbox_path[1:]
-        data = dict()
-        data['identities'] = user_list
-
-        request = Request(url=self.url + 'lox_api/share_create/' + quote_plus(localbox_path), data=dumps(data))
+        data = {
+            'identities': user_list,
+            'path': localbox_path
+        }
+        request = Request(url=self.url + 'lox_api/share_create/', data=dumps(data))
 
         try:
             result = self._make_call(request).read()
@@ -467,24 +466,44 @@ class LocalBox(object):
         :return:
         """
         cryptopath = os_utils.get_keys_path(path)
-        cryptopath = quote_plus(cryptopath)
-
         getLogger(__name__).debug('saving key for %s', cryptopath)
 
         site = self.authenticator.label
 
         pgpclient = gpg()
         encodedata = {
+            'cryptopath': cryptopath,
             'key': b64encode(pgpclient.encrypt(key, site, user)),
             'iv': b64encode(pgpclient.encrypt(iv, site, user)),
             'user': user
         }
         data = dumps(encodedata)
         request = Request(
-            url=self.url + 'lox_api/key/' + cryptopath, data=data)
+            url=self.url + 'lox_api/key/', data=data)
         result = self._make_call(request)
         # NOTE: this is just the result of the last call, not all of them.
         # should be more robust then this
+        return result
+
+    def do_heartbeat(self):
+        """
+        The sync will perform a heartbeat operation by requesting the heartbeat
+        route from the backend
+
+        If the heartbeat is successful, method returns True. If the call
+        returns a 404 or if the server can't be reached, return False
+        """
+        request = Request(url=self.url + 'lox_api/heartbeat')
+
+        result = False
+
+        try:
+            self._make_call(request)
+            result = True
+
+        except HTTPError as error:
+            result = False
+
         return result
 
     def decode_file(self, path, filename, passphrase):
@@ -579,6 +598,7 @@ def remove_decrypted_files():
             getLogger(__name__).error('could not remove file %s, %s' % (filename, ex))
 
     ctrl.save([])
+    Notifs().openfilesCtrl()
 
 
 class InvalidLocalboxURLError(Exception):

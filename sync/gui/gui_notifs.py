@@ -1,27 +1,34 @@
 """
-This module declares handles processed notifications that are sent from the
-NotifHandler module to the GUI. Notifications in the GUI are handled by
-declaring a thread, from class GuiNotifs, which waits on new notifications from
-the NotifHandler module. When a new notification arrives, the event
-EVT_NewGuiNotifs is triggered.
+This module handles processed notifications that are sent from the NotifHandler
+module to the GUI. Notifications in the GUI are handled by declaring a thread,
+from class GuiNotifs, which waits on new notifications from the NotifHandler
+module. When a new notification arrives, the event EVT_NewGuiNotifs is
+triggered.
 """
 
 import threading
-from logging import getLogger
 import json
 
 import wx
 import zmq
 
 from sync.notif import notifs_util
+from logging import getLogger
 
-NewGuiNotifsBind = wx.NewEventType()
-EVT_NewGuiNotifs = wx.PyEventBinder(NewGuiNotifsBind, 1)
+NewPopupBind = wx.NewEventType()
+EVT_NewPopup = wx.PyEventBinder(NewPopupBind, 1)
 
-class NewGuiNotifsEvent(wx.PyCommandEvent):
+NewHeartbeatBind = wx.NewEventType()
+EVT_NewHeartbeat = wx.PyEventBinder(NewHeartbeatBind, 1)
+
+NewOpenfileCtrlBind = wx.NewEventType()
+EVT_NewOpenfileCtrl = wx.PyEventBinder(NewOpenfileCtrlBind, 1)
+
+
+class NewPopupEvent(wx.PyCommandEvent):
     """
-    New GUI notifications event. This event is triggered whenever new
-    notifications arrive from the NotifsHandler module.
+    New popup event. This event is triggered whenever a new gui popup should be
+    displayed to the user.
 
     This event has the `msg` attribute which is a dictionary like:
 
@@ -29,7 +36,8 @@ class NewGuiNotifsEvent(wx.PyCommandEvent):
           "message": "Message of the notification"
         }
 
-    The dictionary is accessible with method `getMsg`.
+    The dictionary is accessible with method `getMsg`. The title and message
+    are the actual title and message of the popup.
     """
 
     def __init__(self, etype, eid, msg):
@@ -38,6 +46,34 @@ class NewGuiNotifsEvent(wx.PyCommandEvent):
 
     def getMsg(self):
         return self.msg
+
+
+class NewHeartbeatEvent(wx.PyCommandEvent):
+    """
+    A heartbeat may need to notify the GUI that a sync went down or came back
+    online. This event is used for that.
+
+    The message contains:
+
+        { "label": "Label identifying the sync",
+          "online": True | False
+        }
+    """
+
+    def __init__(self, etype, eid, msg):
+        wx.PyCommandEvent.__init__(self, etype, eid)
+        self.msg = msg
+
+    def getMsg(self):
+        return self.msg
+
+
+class NewOpenfileCtrlEvent(wx.PyCommandEvent):
+    """
+    Event triggered every file the open file controller adds or removes a file
+    """
+
+    pass
 
 
 class GuiNotifs(threading.Thread):
@@ -52,18 +88,26 @@ class GuiNotifs(threading.Thread):
         self.context = zmq.Context.instance()
 
     def run(self):
-        self.notifs_sub = self.context.socket(zmq.SUB)
-
-        self.notifs_sub.setsockopt(zmq.SUBSCRIBE, notifs_util.zmq_gui_notif)
-        self.notifs_sub.connect(notifs_util.zmq_ipc_pub)
+        self.notifs_sub_gui = self.context.socket(zmq.SUB)
+        self.notifs_sub_gui.setsockopt(zmq.SUBSCRIBE, notifs_util.zmq_gui_notif)
+        self.notifs_sub_gui.connect(notifs_util.zmq_ipc_pub)
 
         while True:
-            contents = self.notifs_sub.recv()
+            contents = self.notifs_sub_gui.recv()
             msg_str = notifs_util.demogrify(contents)
             msg = json.loads(msg_str)
 
-            if "cmd" in msg and msg["cmd"] == "stop":
+            if msg["type"] == "cmd" and msg["cmd"] == "stop":
                 break
 
-            evt = NewGuiNotifsEvent(NewGuiNotifsBind, -1, msg)
-            wx.PostEvent(self._parent, evt)
+            elif msg["type"] == "popup":
+                evt = NewPopupEvent(NewPopupBind, -1, msg)
+                wx.PostEvent(self._parent, evt)
+
+            elif msg["type"] == "heartbeat":
+                evt = NewHeartbeatEvent(NewHeartbeatBind, -1, msg)
+                wx.PostEvent(self._parent, evt)
+
+            elif msg["type"] == "openfile_ctrl":
+                evt = NewOpenfileCtrlEvent(NewOpenfileCtrlBind, -1)
+                wx.PostEvent(self._parent, evt)
