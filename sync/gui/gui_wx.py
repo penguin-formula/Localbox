@@ -661,7 +661,7 @@ class NewSharePanel(wx.Panel):
                 SharesController().load()  # force load to get the ids from the server
                 self.parent.ctrl.populate(SharesController().get_list())
             else:
-                gui_utils.show_error_dialog(_('Server error creating the share'), _('Error'))
+                gui_utils.show_error_dialog(_('Server error creating the share, there may already be a share with this name'), _('Error'))
             self.parent.Destroy()
 
     def OnClickClose(self, event):
