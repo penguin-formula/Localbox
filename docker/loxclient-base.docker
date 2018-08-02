@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 WORKDIR /usr/app/LoxClient
 
@@ -21,7 +21,7 @@ RUN apt update --fix-missing && \
         libtiff-dev \
         libgtk2.0-dev \
         libsdl1.2-dev \
-        libgstreamer-plugins-base0.10-dev \
+        libgstreamer-plugins-base1.0-dev \
         libnotify-dev \
         freeglut3 \
         freeglut3-dev \
@@ -37,7 +37,7 @@ RUN apt update --fix-missing && \
 RUN pip install --upgrade pip
 ADD LoxClient/requirements.txt /usr/app/LoxClient
 RUN pip install -r requirements.txt
-RUN python -m pip install -U --pre -f https://wxpython.org/Phoenix/snapshot-builds/linux/gtk2/ubuntu-16.04/wxPython_Phoenix-3.0.3.dev2873+5fec882-cp27-cp27mu-linux_x86_64.whl wxPython_Phoenix
+RUN python -m pip install --no-cache-dir -U --pre -f https://extras.wxpython.org/wxPython4/extras/linux/gtk2/ubuntu-18.04/wxPython-4.0.2-cp27-cp27mu-linux_x86_64.whl wxPython
 
 # Add this tool to path so translations may be done bellow
 RUN mkdir -p /usr/app/bin
