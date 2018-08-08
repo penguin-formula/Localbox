@@ -39,8 +39,8 @@ class LoginController(object):
             fingerprint = keys.generate(passphrase,
                                         site,
                                         localbox_client.authenticator.username)
-            data = {'private_key': keys.get_key(fingerprint, True),
-                    'public_key': keys.get_key(fingerprint, False)}
+            data = {'private_key': keys.get_key(fingerprint, True, passphrase),
+                    'public_key': keys.get_key(fingerprint, False, passphrase)}
             data_json = json.dumps(data)
             # register key data
             result = localbox_client.call_user(data_json)

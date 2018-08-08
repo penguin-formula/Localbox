@@ -418,6 +418,24 @@ class LocalBox(object):
             getLogger(__name__).exception(error)
             return []
 
+    def get_invite_list(self, user):
+        """
+        List of invites.
+
+        :return: True if success, False otherwise
+        """
+        request = Request(url=self.url + 'lox_api/invitations/' + user)
+
+        try:
+            result = self._make_call(request).read()
+            if result != '' and result is not None:
+                return loads(result)
+            else:
+                return []
+        except Exception as error:
+            getLogger(__name__).exception(error)
+            return []
+
     def get_share_user_list(self, share_id):
         """
         List users of a given share.

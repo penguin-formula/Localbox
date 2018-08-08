@@ -1,3 +1,4 @@
+import sys
 from logging import getLogger
 from json import loads
 
@@ -272,7 +273,6 @@ class LocalboxPanel(LoxPanel):
 
         self.refresh()
 
-
     def on_btn_sync(self, wx_event):
         labels_to_sync = self.ctrl.selected()
         self._main_syncing_thread.sync(labels_to_sync)
@@ -387,9 +387,9 @@ class SharePanel(LoxPanel):
         NewShareDialog(self, self.ctrl)
 
     def on_btn_del(self, wx_event):
-        self.ctrl.delete()
-        # question = _('This will also delete the directory in your LocalBox and for all users. Continue?')
-        # if gui_utils.show_confirm_dialog(self, question):
+        question = _('This will also delete the directory in your LocalBox and for all users. Continue?')
+        if gui_utils.show_confirm_dialog(self, question):
+            self.ctrl.delete()
 
     def on_btn_edit(self, wx_event):
         share = None
@@ -426,13 +426,13 @@ class SharePanel(LoxPanel):
         owner = self.ctrl.ctrl[self.ctrl.GetFirstSelected()].user
         self.btn_edit.Enable(self.ctrl.SelectedItemCount == 1 and owner == user)
 
-
     def sync(self):
         worker = PopulateThread(self, self.ctrl.load)
         worker.start()
 
         self.btn_refresh.Enable(len(self.ctrl_lox) > 0)
         self.btn_add.Enable(len(self.ctrl_lox) > 0)
+
 
 class AccountPanel(wx.Panel):
     """
@@ -444,12 +444,99 @@ class AccountPanel(wx.Panel):
 
         # Attributes
         self.ctrl = AccountController()
-        sizer = wx.BoxSizer(wx.VERTICAL)
 
-        sizer.Add(wx.StaticText(self, label=_("Hi, User!!!")),
-                  1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=DEFAULT_BORDER)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.SetSizer(sizer)
+        self.label_message = self.get_user_message()
+
+        self.invite_list = self.get_share_list()
+
+        self.action_buttons = self.get_actions_buttons()
+
+        self.__do_layout()
+
+        self.__set_events()
+
+    def get_share_list(self):
+        share_list = wx.ListCtrl(self, size=(700, -1), style=wx.LC_REPORT | wx.BORDER_SUNKEN)
+        share_list.InsertColumn(0, _("Link Path"), width=300)
+        share_list.InsertColumn(1, _("Owner"), width=150)
+        share_list.InsertColumn(2, _("Share Status"), width=150)
+        return share_list
+
+    def on_show(self, event):
+        if self.IsShown():
+            self.invite_list.DeleteAllItems()
+
+            invites = self.ctrl.load_invites()
+            if len(invites) > 0:
+                self.label_message.SetLabelText(_('You have {0} invitations to review.'.format(str(len(invites)))))
+                for invite in invites:
+                    index = self.invite_list.InsertItem(sys.maxint, invite['link_path'])
+                    self.invite_list.SetItem(index, 1, str(invite['user']))
+                    self.invite_list.SetItem(index, 2, str(invite['is_active']))
+                self.invite_list.Show()
+            else:
+                self.invite_list.Hide()
+
+    def get_user_message(self):
+        username = 'User'
+        for item in SyncsController().load():
+            username = item.user
+            break
+        return wx.StaticText(self, label='Hello {0}, You have no pending action on your account'.format(username))
+
+    def get_actions_buttons(self):
+
+        btn_box = wx.BoxSizer(wx.HORIZONTAL)
+        self.btn_accept = wx.Button(self, label="Accept")
+        self.btn_accept.Disable()
+        btn_box.Add(self.btn_accept)
+        self.btn_decline = wx.Button(self, label="Decline")
+        self.btn_decline.Disable()
+        btn_box.Add(self.btn_decline)
+
+        return btn_box
+
+    def __do_layout(self):
+        self.sizer.Add(self.label_message, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=DEFAULT_BORDER)
+        self.sizer.Add(self.invite_list, 2, wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=DEFAULT_BORDER)
+        self.sizer.Add(self.action_buttons, 3, wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=DEFAULT_BORDER)
+        self.btn_accept.Enable(self.invite_list.GetSelectedItemCount() > 0)
+        self.btn_decline.Enable(self.invite_list.GetSelectedItemCount() > 0)
+        self.SetSizer(self.sizer)
+
+    def __set_events(self):
+        self.Bind(wx.EVT_SHOW, self.on_show)
+        self.Bind(wx.EVT_BUTTON, self.on_accept, id=self.btn_accept.Id)
+        self.Bind(wx.EVT_BUTTON, self.on_decline, id=self.btn_decline.Id)
+        self.invite_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self._on_list_item_selected)
+        self.invite_list.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._on_list_item_deselected)
+
+    def _on_list_item_selected(self, wx_event):
+        self.btn_accept.Enable(True)
+        self.btn_decline.Enable(True)
+
+    def _on_list_item_deselected(self, wx_event):
+        self.btn_accept.Enable(self.invite_list.GetSelectedItemCount() > 0)
+        self.btn_decline.Enable(self.invite_list.GetSelectedItemCount() > 0)
+
+    def on_decline(self, wx_event):
+        question = _('You are about to decline the selected share, are you sure?')
+        if gui_utils.show_confirm_dialog(self, question):
+            print 'Voce rejeitou'
+            print 'Voce rejeitou'
+            print 'Voce rejeitou'
+            print 'Voce rejeitou'
+
+    def on_accept(self, wx_event):
+        question = _('You are about to acceppt the selected share, are you sure?')
+        if gui_utils.show_confirm_dialog(self, question):
+            print 'Voce aceitou'
+            print 'Voce aceitou'
+            print 'Voce aceitou'
+            print 'Voce aceitou'
+            print 'Voce aceitou'
 
 
 class PreferencesPanel(wx.Panel):
@@ -661,7 +748,8 @@ class NewSharePanel(wx.Panel):
                 SharesController().load()  # force load to get the ids from the server
                 self.parent.ctrl.populate(SharesController().get_list())
             else:
-                gui_utils.show_error_dialog(_('Server error creating the share, there may already be a share with this name'), _('Error'))
+                gui_utils.show_error_dialog(
+                    _('Server error creating the share, there may already be a share with this name'), _('Error'))
             self.parent.Destroy()
 
     def OnClickClose(self, event):

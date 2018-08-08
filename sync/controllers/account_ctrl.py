@@ -1,7 +1,11 @@
 import pickle
 
 from logging import getLogger
+from urllib2 import URLError
+
+from sync.controllers.localbox_ctrl import SyncsController
 from sync.defaults import LOCALBOX_ACCOUNT_PATH
+from sync.localbox import LocalBox
 
 
 class AccountController:
@@ -40,6 +44,19 @@ class AccountController:
 
         return self.lst_localbox
 
+    def load_invites(self):
+        invite_list = []
+        for item in SyncsController().load():
+            try:
+                localbox_client = LocalBox(url=item.url, label=item.label, path=item.path)
+
+                result = localbox_client.get_invite_list(user=item.user)
+
+                for invite in result:
+                    invite_list.append(invite)
+            except URLError:
+                getLogger(__name__).exception('failed to get_share_list (%s, %s)' % (item.url, item.label))
+        return invite_list
 
 class Preferences:
     def __init__(self):

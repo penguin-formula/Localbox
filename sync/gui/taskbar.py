@@ -71,7 +71,7 @@ class LocalBoxIcon(TaskBarIcon):
         # The purpose of this 'frame' is to keep the mainloop of wx alive
         # (which checks for living wx thingies)
         self.frame = Gui(None, main_syncing_thread.waitevent, main_syncing_thread)
-        self.frame.Show(False)
+        self.frame.Show(True)
         self._main_syncing_thread = main_syncing_thread
 
         self.gui_notif = GuiNotifs(self)

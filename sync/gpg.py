@@ -37,14 +37,14 @@ class gpg(object):
                        verbose=False,
                        options=["--allow-non-selfsigned-uid"])
 
-    def get_key(self, fingerprint, private):
+    def get_key(self, fingerprint, private, passphrase):
         """
         returns the key belonging to the fingerprint given. if 'private' is
         True, the private key is returned. If 'private' is False, the public
         key will be returned.
         """
-        key = self.gpg.export_keys(fingerprint, private, armor=False)
-        return b64encode(key.encode('ISO8859-1'))
+        key = self.gpg.export_keys(fingerprint, private, armor=False, passphrase=passphrase)
+        return b64encode(key)
 
     def add_keypair(self, public_key, private_key, site, user, passphrase):
         """
