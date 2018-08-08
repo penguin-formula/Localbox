@@ -37,7 +37,7 @@ RUN apt update --fix-missing && \
 RUN pip install --upgrade pip
 ADD LoxClient/requirements.txt /usr/app/LoxClient
 RUN pip install -r requirements.txt
-RUN python -m pip install --no-cache-dir -U --pre -f https://extras.wxpython.org/wxPython4/extras/linux/gtk2/ubuntu-18.04/wxPython-4.0.2-cp27-cp27mu-linux_x86_64.whl wxPython
+RUN python -m pip install --no-cache-dir -U --pre -f https://extras.wxpython.org/wxPython4/extras/linux/gtk2/ubuntu-18.04/wxPython-4.0.3-cp27-cp27mu-linux_x86_64.whl wxPython
 
 # Add this tool to path so translations may be done bellow
 RUN mkdir -p /usr/app/bin
