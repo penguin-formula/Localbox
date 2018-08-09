@@ -72,6 +72,54 @@ class SharesController(object):
 
         return self._list
 
+    def load_invites(self):
+        self._list = []
+        for item in SyncsController().load():
+            try:
+                localbox_client = LocalBox(url=item.url, label=item.label, path=item.path)
+
+                for share in localbox_client.get_invite_list(user=item.user):
+                    share_item = ShareItem(user=share['user'],
+                                           path='/' + share['link_path'],
+                                           url=item.url,
+                                           label=item.label,
+                                           id=share['id'])
+                    self._list.append(share_item)
+            except URLError:
+                getLogger(__name__).exception('failed to get_share_list (%s, %s)' % (item.url, item.label))
+
+        return self._list
+
+    def delete_invite(self, index, save=False):
+        """
+        Delete item from list by 'index'
+        :param index:
+        :param save:
+        :return:
+        """
+        item = self._list[index]
+        localbox_client = LocalBox(url=item.url, label=item.label, path=item.path)
+        localbox_client.delete_invite(item.id)
+        sql = 'delete from keys where site = ? and user != ?'
+        database_execute(sql, (item.label, item.user))
+        del self._list[index]
+        if save:
+            self.save()
+
+    def accept_invite(self, index, save=False):
+            """
+            Delete item from list by 'index'
+            :param index:
+            :param save:
+            :return:
+            """
+            item = self._list[index]
+            localbox_client = LocalBox(url=item.url, label=item.label, path=item.path)
+            localbox_client.accept_invite(item.id)
+            if save:
+                self.save()
+
+
     def get_list(self):
         return self._list
 

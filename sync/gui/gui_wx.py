@@ -459,9 +459,10 @@ class AccountPanel(wx.Panel):
 
     def get_share_list(self):
         share_list = wx.ListCtrl(self, size=(700, -1), style=wx.LC_REPORT | wx.BORDER_SUNKEN)
-        share_list.InsertColumn(0, _("Link Path"), width=300)
-        share_list.InsertColumn(1, _("Owner"), width=150)
-        share_list.InsertColumn(2, _("Share Status"), width=150)
+        share_list.InsertColumn(0, _("ID"), width=50)
+        share_list.InsertColumn(1, _("Link Path"), width=300)
+        share_list.InsertColumn(2, _("Owner"), width=150)
+        share_list.InsertColumn(3, _("Share Status"), width=150)
         return share_list
 
     def on_show(self, event):
@@ -472,11 +473,19 @@ class AccountPanel(wx.Panel):
             if len(invites) > 0:
                 self.label_message.SetLabelText(_('You have {0} invitations to review.'.format(str(len(invites)))))
                 for invite in invites:
-                    index = self.invite_list.InsertItem(sys.maxint, invite['link_path'])
-                    self.invite_list.SetItem(index, 1, str(invite['user']))
-                    self.invite_list.SetItem(index, 2, str(invite['is_active']))
+                    index = self.invite_list.InsertItem(sys.maxint, str(invite['id']))
+                    self.invite_list.SetItem(index, 1, str(invite['link_path']))
+                    self.invite_list.SetItem(index, 2, str(invite['user']))
+                    self.invite_list.SetItem(index, 3, str(invite['is_active']))
                 self.invite_list.Show()
+                self.btn_accept.Show()
+                self.btn_decline.Show()
             else:
+                self.label_message.Destroy()
+                self.label_message = self.get_user_message()
+                self.sizer.Add(self.label_message, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=DEFAULT_BORDER)
+                self.btn_accept.Hide()
+                self.btn_decline.Hide()
                 self.invite_list.Hide()
 
     def get_user_message(self):
@@ -487,7 +496,6 @@ class AccountPanel(wx.Panel):
         return wx.StaticText(self, label='Hello {0}, You have no pending action on your account'.format(username))
 
     def get_actions_buttons(self):
-
         btn_box = wx.BoxSizer(wx.HORIZONTAL)
         self.btn_accept = wx.Button(self, label="Accept")
         self.btn_accept.Disable()
@@ -524,19 +532,34 @@ class AccountPanel(wx.Panel):
     def on_decline(self, wx_event):
         question = _('You are about to decline the selected share, are you sure?')
         if gui_utils.show_confirm_dialog(self, question):
-            print 'Voce rejeitou'
-            print 'Voce rejeitou'
-            print 'Voce rejeitou'
-            print 'Voce rejeitou'
+            selected_invite = self.get_selected_share()
+            share_control = SharesController()
+            try:
+                share_control.load_invites()
+                share_control.delete_invite(selected_invite.Id)
+            finally:
+                del share_control
+                self.on_show(None)
+
+    def get_selected_share(self):
+        idx = 0
+        while idx > -1:
+            idx = self.invite_list.GetNextSelected(-1)
+            if idx > -1:
+                invite = self.invite_list.GetItem(idx, 0)
+                return invite
 
     def on_accept(self, wx_event):
         question = _('You are about to acceppt the selected share, are you sure?')
         if gui_utils.show_confirm_dialog(self, question):
-            print 'Voce aceitou'
-            print 'Voce aceitou'
-            print 'Voce aceitou'
-            print 'Voce aceitou'
-            print 'Voce aceitou'
+            selected_invite = self.get_selected_share()
+            share_control = SharesController()
+            try:
+                share_control.load_invites()
+                share_control.accept_invite(selected_invite.Id)
+            finally:
+                del share_control
+                self.on_show(None)
 
 
 class PreferencesPanel(wx.Panel):

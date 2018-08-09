@@ -78,7 +78,10 @@ class Syncer(object):
         getLogger(__name__).debug('%s remote modification time: %s' % (path, modtime))
         vfsnode = MetaVFS(modtime, node['path'], node['is_dir'])
         for child in node['children']:
-            self.populate_localbox_metadata(child['path'], parent=vfsnode)
+            try:
+                self.populate_localbox_metadata(child['path'], parent=vfsnode)
+            except:
+                pass
         if parent is None:
             self.localbox_metadata = vfsnode
         else:

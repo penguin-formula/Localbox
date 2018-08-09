@@ -215,6 +215,32 @@ class LocalBox(object):
         except HTTPError:
             getLogger(__name__).error("Error remote deleting share '%d'", share_id)
 
+    def delete_invite(self, share_receiver_id):
+        """
+        Delete share.
+
+        :param share_receiver_id:
+        :return:
+        """
+        request = Request(url=self.url + 'lox_api/invite/' + str(share_receiver_id) + '/revoke')
+        try:
+            return self._make_call(request)
+        except HTTPError:
+            getLogger(__name__).error("Error revoke invite share '%d'", share_receiver_id)
+
+    def accept_invite(self, share_receiver_id):
+            """
+            Delete share.
+
+            :param share_receiver_id:
+            :return:
+            """
+            request = Request(url=self.url + 'lox_api/invite/' + str(share_receiver_id) + '/accept')
+            try:
+                return self._make_call(request)
+            except HTTPError:
+                getLogger(__name__).error("Error revoke invite share '%d'", share_receiver_id)
+
     def upload_file(self, path, fs_path, passphrase, remove=True):
         """
         upload a file to localbox
