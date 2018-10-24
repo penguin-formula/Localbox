@@ -40,3 +40,17 @@ Indicator Systemtray Unity:
     sudo apt-add-repository ppa:fixnix/indicator-systemtray-unity -y && sudo apt-get update && sudo apt-get install indicator-systemtray-unity -y
 
 .. image:: ../_static/troubleshooting_ubuntu_systray.jpg
+
+No systray icon on ElementaryOS
+=========================
+
+Problem: You're running LocalBox sync client on Elementary (Unity Desktop Environment), it seems to be running fine
+but you cannot see it on the system tray.
+
+Solution: Elementary does not have a conventional system tray. You can add this functionality by installing
+Elementary Indicators:
+.. code:: bash
+
+    https://github.com/mdh34/elementary-indicators/blob/master/README.md
+
+
