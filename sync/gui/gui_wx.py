@@ -229,7 +229,7 @@ class LocalboxPanel(LoxPanel):
         # Make widgets
         self.btn_sync = wx.Button(self, label=_('Sync'), size=(100, 30))
         self.btn_rem = wx.Button(self, label=_('Clean'), size=(100, 30))
-        self.btn_ping = wx.Button(self, label=_('Ping'), size=(100, 30))
+        self.btn_ping = wx.Button(self, label=_('Refresh'), size=(100, 30))
 
         # Bind events
         self.Bind(wx.EVT_BUTTON, self.on_btn_sync, self.btn_sync)

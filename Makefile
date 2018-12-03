@@ -48,8 +48,8 @@ installer: exe
 	makensis -DVERSION=`python -c 'from sync.__version__ import *; print(VERSION_STRING)' | tail -1` winstall.nsh
 
 exe: #sync/version.py
-	wine python.exe setup.py bdist_wininst
-	#python setup.py bdist_wininst
+	#wine python.exe setup.py bdist_wininst
+	python setup.py bdist_wininst
 	cp dist/LocalBoxSync-*.win32.exe .
 
 translatefile:

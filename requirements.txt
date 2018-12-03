@@ -1,8 +1,9 @@
-pycrypto==2.6.1
-python-gnupg==0.3.8
-six==1.10.0
-wheel==0.24.0
-#wx==3.0.3
-watchdog==0.8.3
-psutil==5.2.0
-pyzmq==16.0.2
+pycrypto
+python-gnupg
+six
+wheel
+wxPython
+watchdog
+psutil
+pyzmq
+stdeb

@@ -15,7 +15,7 @@ for translation in *.{po,PO}; do
             mkdir -p "${locale_dir}"
         fi
 
-        msgfmt.py -o "${locale_dir}"/localboxsync.mo "${translation}"
+        msgfmt -o "${locale_dir}"/localboxsync.mo "${translation}"
         rm -f "${lang}".mo
 
     fi
