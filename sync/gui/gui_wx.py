@@ -2,7 +2,7 @@ import sys
 from logging import getLogger
 from json import loads
 
-import wx
+import wx, os
 
 from sync.controllers import localbox_ctrl
 from sync.controllers.account_ctrl import AccountController
@@ -18,7 +18,7 @@ from sync.gui.event import EVT_POPULATE, PopulateThread
 from sync.gui.gui_utils import MAIN_FRAME_SIZE, MAIN_PANEL_SIZE, \
     MAIN_TITLE, DEFAULT_BORDER, PASSPHRASE_DIALOG_SIZE, PASSPHRASE_TITLE
 from sync.gui.wizard import NewSyncWizard
-from sync.language import LANGUAGES
+from sync.language import LANGUAGES, set_language
 from sync.localbox import LocalBox, InvalidLocalBoxPathError, get_localbox_path, remove_decrypted_files
 from sync.notif.notifs import Notifs
 
@@ -36,16 +36,16 @@ class LocalBoxApp(wx.App):
         self.instance = wx.SingleInstanceChecker(self.name)
         if self.instance.IsAnotherRunning():
             wx.MessageBox(
-                "An instance of the application is already running",
+                "An instance of the application is already running PID:%s" % (self.instance),
                 "Error",
                 wx.OK | wx.ICON_WARNING
             )
             return False
         return True
 
-
+    
 class Gui(wx.Frame):
-    def __init__(self, parent, event, main_syncing_thread):
+    def __init__(self, parent, event, main_syncing_thread, init=True):
         super(Gui, self).__init__(parent,
                                   title=MAIN_TITLE,
                                   size=MAIN_FRAME_SIZE,
@@ -78,7 +78,7 @@ class Gui(wx.Frame):
 
         self.SetSizer(bSizer1)
 
-        self.InitUI()
+        self.InitUI(init)
 
         self.show_first_panels()
 
@@ -88,12 +88,22 @@ class Gui(wx.Frame):
 
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
-        for i in SyncsController().load():
-            PassphraseDialog(self, username=i.user, label=i.label).Show()
+        if init:
+            for i in SyncsController().load():
+                PassphraseDialog(self, username=i.user, label=i.label).Show()
 
-    def InitUI(self):
+    def Restart(self):
+        self.Hide()
+        self.__init__(None, self.event, self._main_syncing_thread, False)
+        self.Show(True)
+        self.panel_syncs.Hide()
+        self.panel_preferences.Show()
+        self.ctrl = self.panel_preferences.ctrl
 
-        self.add_toolbar()
+
+    def InitUI(self, init=True):
+
+        self.add_toolbar(init)
 
         # icon = wx.Icon()
         # icon.CopyFromBitmap(wx.Bitmap(gui_utils.iconpath(), wx.BITMAP_TYPE_ANY))
@@ -101,7 +111,9 @@ class Gui(wx.Frame):
 
     def on_close(self, event):
         self.Hide()
-        event.Veto(True)
+        #event.Veto(True)
+        print "Closing now", self._main_syncing_thread
+        os._exit(0)
 
     def _create_toolbar_label(self, label, img):
         try:
@@ -114,7 +126,7 @@ class Gui(wx.Frame):
                                                   label,
                                                   wx.Bitmap(gui_utils.images_path(img), wx.BITMAP_TYPE_ANY))
 
-    def add_toolbar(self):
+    def add_toolbar(self, init=True):
         self.toolbar = self.CreateToolBar(style=wx.TB_TEXT)
 
         self.toolbar.AddStretchableSpace()
@@ -128,7 +140,10 @@ class Gui(wx.Frame):
 
         self.toolbar.Realize()
 
-        self.toolbar.ToggleTool(bt_toolbar_localboxes.Id, True)
+        if init:
+            self.toolbar.ToggleTool(bt_toolbar_localboxes.Id, True)
+        else:
+            self.toolbar.ToggleTool(bt_toolbar_preferences.Id, True)
 
         self.toolbar_panels[bt_toolbar_localboxes.Id] = self.panel_syncs
         self.toolbar_panels[bt_toolbar_shares.Id] = self.panel_shares
@@ -427,10 +442,11 @@ class SharePanel(LoxPanel):
         self.btn_edit.Enable(self.ctrl.SelectedItemCount == 1 and owner == user)
 
     def sync(self):
+        self.btn_refresh.Disable()
         worker = PopulateThread(self, self.ctrl.load)
         worker.start()
 
-        self.btn_refresh.Enable(len(self.ctrl_lox) > 0)
+        #self.btn_refresh.Enable(len(self.ctrl_lox) > 0)
         self.btn_add.Enable(len(self.ctrl_lox) > 0)
 
 
@@ -493,7 +509,7 @@ class AccountPanel(wx.Panel):
         for item in SyncsController().load():
             username = item.user
             break
-        return wx.StaticText(self, label='Hello {0}, You have no pending action on your account'.format(username))
+        return wx.StaticText(self, label=_('Hello {0}, You have no pending action on your account').format(username))
 
     def get_actions_buttons(self):
         btn_box = wx.BoxSizer(wx.HORIZONTAL)
@@ -572,6 +588,7 @@ class PreferencesPanel(wx.Panel):
 
         # Attributes
         self.ctrl = preferences_ctrl
+        self.parent = parent
         self.language_choice = wx.Choice(self, choices=list(LANGUAGES.keys()))
 
         self.language_choice.SetSelection(self.language_choice.FindString(
@@ -595,6 +612,9 @@ class PreferencesPanel(wx.Panel):
             "You selected " + language_selected + " from Choice")
         self.ctrl.prefs.language = language_selected
 
+        set_language(preferences_ctrl.get_language_abbr())
+
+        self.parent.Restart()
 
 # ----------------------------------- #
 # ----       OTHER Panels        ---- #
@@ -691,7 +711,7 @@ class BottomPanel(wx.Panel):
     def OnClickOk(self, event):
         getLogger(__name__).debug('OkOnClick')
         self.parent.ctrl.save()
-        self.parent.Hide()
+        #self.parent.Hide()
 
     def ApplyOnClick(self, event):
         getLogger(__name__).debug('ApplyOnClick')
@@ -699,7 +719,7 @@ class BottomPanel(wx.Panel):
 
     def CloseOnClick(self, event):
         getLogger(__name__).debug('CloseOnClick')
-        self.parent.Hide()
+        #self.parent.Hide()
 
 
 class NewSharePanel(wx.Panel):

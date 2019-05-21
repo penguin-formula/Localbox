@@ -161,10 +161,10 @@ class Authenticator(object):
         """
         Do initial authentication with the resource owner password credentials
         """
-        if self.client_id is None or self.client_secret is None:
-            self.client_id = generate_client_id()
-            self.client_secret = generate_client_secret()
-            getLogger(__name__).debug('Created new credentials, cliend_id=%s' % self.client_id)
+        #if self.client_id is None or self.client_secret is None:
+        self.client_id = generate_client_id()
+        self.client_secret = generate_client_secret()
+        getLogger(__name__).debug('Created new credentials, cliend_id=%s' % self.client_id)
 
         self.username = username
 

@@ -42,3 +42,4 @@ class PopulateThread(threading.Thread):
         value = self._func()
         evt = PopulateEvent(loxEVT_POPULATE, -1, value)
         wx.PostEvent(self._parent, evt)
+        self._parent.btn_refresh.Enable()

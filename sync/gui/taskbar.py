@@ -216,11 +216,15 @@ def taskbarmain(main_syncing_thread, sites=None, observers=None):
     """
     main function to run to get the taskbar started
     """
-    app = LocalBoxApp(False)
+    try:
+        app = LocalBoxApp(False)
 
-    icon = LocalBoxIcon(main_syncing_thread, sites=sites, observers=observers)
+        icon = LocalBoxIcon(main_syncing_thread, sites=sites, observers=observers)
 
-    if is_first_run():
-        icon.start_gui(None)
+        if is_first_run():
+            icon.start_gui(None)
 
-    app.MainLoop()
+        app.MainLoop()
+    except SystemExit:
+        print "Exiting"
+        os._exit(0)
