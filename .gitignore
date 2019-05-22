@@ -16,3 +16,6 @@ docs/_diagrams/gen
 docs/_diagrams/*.svg
 sync/locale
 venv/
+debian/
+share/
+share_cloud/
