@@ -21,6 +21,7 @@ from sync.gui import gui_utils
 from sync.gui.taskbar import taskbarmain
 from sync.heartbeat import Heartbeat
 from sync.localbox import LocalBox
+from sync.open_file import open_file
 from sync.notif.notif_handler import NotifHandler
 from sync.notif.notifs import Notifs
 from sync.syncer import MainSyncer
@@ -98,7 +99,7 @@ def run_file_decryption(filename):
             gui_utils.show_error_dialog(_('%s does not belong to any configured localbox') % filename, 'Error',
                                         True)
             getLogger(__name__).error('%s does not belong to any configured localbox' % filename)
-            exit(1)
+            #exit(1)
 
         # Request file to be opened
         data_dic = {
@@ -111,7 +112,8 @@ def run_file_decryption(filename):
         file_to_open = Notifs().openFileReq(data_dic)
 
         if file_to_open is not None and os.path.exists(file_to_open):
-            open_file_ext(file_to_open)
+            decoded_file = open_file(data_dic)
+            open_file_ext(decoded_file)
             getLogger(__name__).info('Finished decrypting and opening file: %s', filename)
 
         else:

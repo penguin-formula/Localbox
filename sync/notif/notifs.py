@@ -135,8 +135,8 @@ class Notifs(object):
         self._send({ 'code': 700, 'data_dic': data_dic })
 
         # Wait for the answer
-        contents = self.notifs_sub.recv()
-        msg_str = notifs_util.demogrify(contents)
-        msg = json.loads(msg_str)
+        #contents = self.notifs_sub.recv()
+        #msg_str = notifs_util.demogrify(contents)
+        #msg = json.loads(msg_str)
 
-        return msg['file_name']
+        return data_dic['filename']
