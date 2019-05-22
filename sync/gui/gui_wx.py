@@ -94,7 +94,8 @@ class Gui(wx.Frame):
 
     def Restart(self):
         self.Hide()
-        self.__init__(None, self.event, self._main_syncing_thread, False)
+        # Find a way to restart frame
+        #self.__init__(None, self.event, self._main_syncing_thread, False)
         self.Show(True)
         self.panel_syncs.Hide()
         self.panel_preferences.Show()
