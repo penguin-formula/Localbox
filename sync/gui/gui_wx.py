@@ -36,7 +36,7 @@ class LocalBoxApp(wx.App):
         self.instance = wx.SingleInstanceChecker(self.name)
         if self.instance.IsAnotherRunning():
             wx.MessageBox(
-                "An instance of the application is already running PID:%s" % (self.instance),
+                "An instance of the application is already running",
                 "Error",
                 wx.OK | wx.ICON_WARNING
             )
@@ -96,6 +96,41 @@ class Gui(wx.Frame):
         self.Hide()
         # Find a way to restart frame
         #self.__init__(None, self.event, self._main_syncing_thread, False)
+
+        self.panel_syncs.Destroy()
+        self.panel_shares.Destroy()
+        self.panel_account.Destroy()
+        self.panel_preferences.Destroy()
+        self.panel_bottom.Destroy()
+        self.panel_line.Destroy()
+
+        self.panel_syncs = LocalboxPanel(self, self.event, self._main_syncing_thread)
+        self.panel_shares = SharePanel(self)
+        self.panel_account = AccountPanel(self)
+        self.panel_preferences = PreferencesPanel(self)
+        self.panel_bottom = BottomPanel(self)
+        self.panel_line = wx.Panel(self)
+
+        line_sizer = wx.BoxSizer(wx.VERTICAL)
+        line_sizer.Add(wx.StaticLine(self.panel_line, -1), 0, wx.ALL | wx.EXPAND, border=10)
+        self.panel_line.SetSizer(line_sizer)
+
+        bSizer1 = wx.BoxSizer(wx.VERTICAL)
+        bSizer1.Add(self.panel_line, 0, wx.EXPAND, border=10)
+        bSizer1.Add(self.panel_syncs, 0, wx.EXPAND, 10)
+        bSizer1.Add(self.panel_shares, 0, wx.EXPAND, 10)
+        bSizer1.Add(self.panel_account, 0, wx.EXPAND, 10)
+        bSizer1.Add(self.panel_preferences, 0, wx.EXPAND, 10)
+        bSizer1.Add(self.panel_bottom, 0, wx.ALIGN_BOTTOM, 10)
+
+        self.InitUI(False)
+
+        self.show_first_panels()
+
+        self.SetAutoLayout(True)
+        self.SetSizer(bSizer1)
+        self.Layout()
+
         self.Show(True)
         self.panel_syncs.Hide()
         self.panel_preferences.Show()
@@ -128,6 +163,9 @@ class Gui(wx.Frame):
                                                   wx.Bitmap(gui_utils.images_path(img), wx.BITMAP_TYPE_ANY))
 
     def add_toolbar(self, init=True):
+        if not init:
+            self.toolbar.Destroy()
+
         self.toolbar = self.CreateToolBar(style=wx.TB_TEXT)
 
         self.toolbar.AddStretchableSpace()
