@@ -64,3 +64,22 @@ def select_directory(cwd=getcwd()):
         return selected_dir
 
     dialog.Destroy()
+
+
+def get_user_input(title, message, frame=False):
+    '''
+        Creates a input field box, used to capture user data
+    '''
+    if not frame:
+        app = wx.App()
+
+        frame = wx.Frame(None, -1, 'win.py')
+        frame.SetDimensions(0,0,200,50)
+
+    dlg = wx.TextEntryDialog(frame, message, title)
+
+    if dlg.ShowModal() == wx.ID_OK:
+        dlg.Destroy()
+        return dlg.GetValue()
+    
+    dlg.Destroy()

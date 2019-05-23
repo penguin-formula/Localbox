@@ -3,6 +3,7 @@ import os
 from sync import defaults
 from sync.controllers.login_ctrl import LoginController
 from sync.localbox import LocalBox
+from sync.gui import gui_utils
 from logging import getLogger
 import sync.controllers.openfiles_ctrl as openfiles_ctrl
 from loxcommon import os_utils
@@ -13,9 +14,12 @@ def open_file(data_dic):
     passphrase = LoginController().get_passphrase(data_dic["label"])
 
     # Passphrases are not saved correctly!!!!
-    print passphrase, "############"
+    if not passphrase:
+        passphrase = gui_utils.get_user_input("YourLocalBox - Enter Passphrase", "Please provide the passphrase to unlock file.")
 
-    passphrase = "fernandes"
+    if not passphrase:
+        gui_utils.show_error_dialog(_('No passphrase provided. aborting'), 'Error', standalone=True)
+        return None
 
     # Stat local box instance
     localbox_client = LocalBox(data_dic["url"], data_dic["label"], "")
@@ -32,7 +36,7 @@ def open_file(data_dic):
 
     # If there was a failure, answer wit ha 404 to state that the file doesn't exist
     except Exception, e:
-        #gui_utils.show_error_dialog(_('Failed to decode contents'), 'Error', standalone=True)
+        gui_utils.show_error_dialog(_('Failed to decode contents. aborting : {}').format(e), 'Error', standalone=True)
         getLogger(__name__).info('failed to decode contents. aborting : {}'.format(e))
 
         return None
