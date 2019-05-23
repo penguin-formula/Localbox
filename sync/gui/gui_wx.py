@@ -59,7 +59,7 @@ class Gui(wx.Frame):
         self.panel_shares = SharePanel(self)
         self.panel_account = AccountPanel(self)
         self.panel_preferences = PreferencesPanel(self)
-        self.panel_bottom = BottomPanel(self)
+        #self.panel_bottom = BottomPanel(self)
         self.panel_line = wx.Panel(self)
 
         line_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -74,7 +74,7 @@ class Gui(wx.Frame):
         bSizer1.Add(self.panel_shares, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_account, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_preferences, 0, wx.EXPAND, 10)
-        bSizer1.Add(self.panel_bottom, 0, wx.ALIGN_BOTTOM, 10)
+        # bSizer1.Add(self.panel_bottom, 0, wx.ALIGN_BOTTOM, 10)
 
         self.SetSizer(bSizer1)
 
@@ -101,14 +101,14 @@ class Gui(wx.Frame):
         self.panel_shares.Destroy()
         self.panel_account.Destroy()
         self.panel_preferences.Destroy()
-        self.panel_bottom.Destroy()
+        # self.panel_bottom.Destroy()
         self.panel_line.Destroy()
 
         self.panel_syncs = LocalboxPanel(self, self.event, self._main_syncing_thread)
         self.panel_shares = SharePanel(self)
         self.panel_account = AccountPanel(self)
         self.panel_preferences = PreferencesPanel(self)
-        self.panel_bottom = BottomPanel(self)
+        # self.panel_bottom = BottomPanel(self)
         self.panel_line = wx.Panel(self)
 
         line_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -121,7 +121,7 @@ class Gui(wx.Frame):
         bSizer1.Add(self.panel_shares, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_account, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_preferences, 0, wx.EXPAND, 10)
-        bSizer1.Add(self.panel_bottom, 0, wx.ALIGN_BOTTOM, 10)
+        # bSizer1.Add(self.panel_bottom, 0, wx.ALIGN_BOTTOM, 10)
 
         self.toolbar_panels = dict()
         self.InitUI(False)
@@ -254,7 +254,7 @@ class LoxPanel(wx.Panel):
 
         # Make widgets
         self.btn_add = wx.Button(self, label=_('Add'), size=(100, 30))
-        self.btn_del = wx.Button(self, label=_('Delete'), size=(100, 30))
+        self.btn_del = wx.Button(self, label=_('Unsync'), size=(100, 30))
 
         # Bind events
         self.Bind(wx.EVT_BUTTON, self.on_btn_add, self.btn_add)
@@ -351,7 +351,9 @@ class LocalboxPanel(LoxPanel):
         :param wx_event:
         :return: None
         """
-        map(lambda l: self._main_syncing_thread.stop(l), self.ctrl.delete())
+        confirm = gui_utils.show_confirm_dialog(self, "Do you really want to unsync this server?")
+        if confirm:
+            map(lambda l: self._main_syncing_thread.stop(l), self.ctrl.delete())
 
     def _on_list_delete_item(self, wx_event):
         self.btn_sync.Enable(self.ctrl.GetItemCount() > 1)
