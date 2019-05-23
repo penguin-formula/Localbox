@@ -83,3 +83,22 @@ def get_user_input(title, message, frame=False):
         return dlg.GetValue()
     
     dlg.Destroy()
+
+
+def get_user_secret_input(title, message, frame=False):
+    '''
+        Creates a input secret field box, used to capture secret user data
+    '''
+    if not frame:
+        app = wx.App()
+
+        frame = wx.Frame(None, -1, 'win.py')
+        frame.SetDimensions(0,0,200,50)
+
+    dlg = wx.PasswordEntryDialog(frame, message, title)
+
+    if dlg.ShowModal() == wx.ID_OK:
+        dlg.Destroy()
+        return dlg.GetValue()
+    
+    dlg.Destroy()

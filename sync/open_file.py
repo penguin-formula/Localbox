@@ -15,7 +15,7 @@ def open_file(data_dic):
 
     # Passphrases are not saved correctly!!!!
     if not passphrase:
-        passphrase = gui_utils.get_user_input("YourLocalBox - Enter Passphrase", "Please provide the passphrase to unlock file.")
+        passphrase = gui_utils.get_user_secret_input("YourLocalBox - Enter Passphrase", "Please provide the passphrase to unlock file.")
 
     if not passphrase:
         gui_utils.show_error_dialog(_('No passphrase provided. aborting'), 'Error', standalone=True)
