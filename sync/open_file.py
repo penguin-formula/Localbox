@@ -13,7 +13,6 @@ def open_file(data_dic):
     # Get passphrase
     passphrase = LoginController().get_passphrase(data_dic["label"])
 
-    # Passphrases are not saved correctly!!!!
     if not passphrase:
         passphrase = gui_utils.get_user_secret_input("YourLocalBox - Enter Passphrase", "Please provide the passphrase to unlock file.")
 

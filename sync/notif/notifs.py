@@ -9,6 +9,7 @@ import json
 import zmq
 
 from sync.notif import notifs_util
+from sync.gui import gui_utils
 
 
 class Notifs(object):
@@ -135,8 +136,8 @@ class Notifs(object):
         self._send({ 'code': 700, 'data_dic': data_dic })
 
         # Wait for the answer
-        #contents = self.notifs_sub.recv()
-        #msg_str = notifs_util.demogrify(contents)
-        #msg = json.loads(msg_str)
+        contents = self.notifs_sub.recv()
+        msg_str = notifs_util.demogrify(contents)
+        msg = json.loads(msg_str)
 
-        return data_dic['filename']
+        return msg['file_name']

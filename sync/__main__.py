@@ -4,6 +4,7 @@ main module for localbox sync
 import os
 import signal
 import sys
+import wx
 from logging import getLogger, ERROR
 from os import makedirs, mkdir
 from os.path import dirname, isdir, exists
@@ -109,11 +110,17 @@ def run_file_decryption(filename):
             "localbox_filename": localbox_filename
         }
 
-        file_to_open = Notifs().openFileReq(data_dic)
+        name = "LocalBoxApp-{}".format(wx.GetUserId())
+        instance = wx.SingleInstanceChecker(name)
+        app_is_running = instance.IsAnotherRunning()
+
+        if app_is_running:
+            file_to_open = Notifs().openFileReq(data_dic)
+        else:
+            file_to_open = open_file(data_dic)
 
         if file_to_open is not None and os.path.exists(file_to_open):
-            decoded_file = open_file(data_dic)
-            open_file_ext(decoded_file)
+            open_file_ext(file_to_open)
             getLogger(__name__).info('Finished decrypting and opening file: %s', filename)
 
         else:
@@ -122,6 +129,7 @@ def run_file_decryption(filename):
 
     except Exception as ex:
         getLogger(__name__).exception(ex)
+        gui_utils.show_error_dialog(_('Exception {}').format(ex), 'Error', standalone=True)
 
 
 if __name__ == '__main__':
