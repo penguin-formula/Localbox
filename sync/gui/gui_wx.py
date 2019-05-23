@@ -1009,7 +1009,7 @@ class PasshphrasePanel(wx.Panel):
         self.label.Wrap(parent.Size[0] - 50)
         self._passphrase = wx.TextCtrl(self, style=wx.TE_PASSWORD)
         self._btn_ok = wx.Button(self, id=wx.ID_OK, label=_('Ok'))
-        self._btn_close = wx.Button(self, id=wx.ID_CLOSE, label=_('Close'))
+        #self._btn_close = wx.Button(self, id=wx.ID_CLOSE, label=_('Close'))
 
         # Layout
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -1019,7 +1019,7 @@ class PasshphrasePanel(wx.Panel):
         btn_szr = wx.StdDialogButtonSizer()
 
         btn_szr.AddButton(self._btn_ok)
-        btn_szr.AddButton(self._btn_close)
+        #btn_szr.AddButton(self._btn_close)
 
         btn_szr.Realize()
 
@@ -1031,13 +1031,16 @@ class PasshphrasePanel(wx.Panel):
 
         # Event Handlers
         self.Bind(wx.EVT_BUTTON, self.OnClickOk, id=self._btn_ok.Id)
-        self.Bind(wx.EVT_BUTTON, self.OnClickClose, id=self._btn_close.Id)
+        #self.Bind(wx.EVT_BUTTON, self.OnClickClose, id=self._btn_close.Id)
         self._passphrase.Bind(wx.EVT_KEY_DOWN, self.OnEnter)
 
         self.SetSizer(main_sizer)
 
     def OnClickOk(self, event):
         if event.Id == self._btn_ok.Id:
+            if not self._passphrase.Value:
+                gui_utils.show_error_dialog(message=_('Please type a passphrase'), title=_('Error'))
+                return None
             try:
                 LoginController().store_passphrase(passphrase=self._passphrase.Value,
                                                    user=self._username,
@@ -1231,7 +1234,7 @@ class PassphraseDialog(wx.Dialog):
         super(PassphraseDialog, self).__init__(parent=parent,
                                                title=PASSPHRASE_TITLE,
                                                size=PASSPHRASE_DIALOG_SIZE,
-                                               style=wx.CLOSE_BOX | wx.CAPTION)
+                                               style=wx.CAPTION)
 
         # Attributes
         self.panel = PasshphrasePanel(self, username, label)
@@ -1250,7 +1253,7 @@ class PassphraseDialog(wx.Dialog):
         self.Show()
 
     def OnClickClose(self, wx_event):
-        self.Destroy()
+        self.Refresh()
 
     @staticmethod
     def show(username, label):
