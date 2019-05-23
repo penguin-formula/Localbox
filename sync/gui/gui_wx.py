@@ -123,18 +123,20 @@ class Gui(wx.Frame):
         bSizer1.Add(self.panel_preferences, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_bottom, 0, wx.ALIGN_BOTTOM, 10)
 
+        self.toolbar_panels = dict()
         self.InitUI(False)
 
         self.show_first_panels()
+
+        self.panel_syncs.Hide()
+        self.panel_preferences.Show()
+        self.ctrl = self.panel_preferences.ctrl
 
         self.SetAutoLayout(True)
         self.SetSizer(bSizer1)
         self.Layout()
 
         self.Show(True)
-        self.panel_syncs.Hide()
-        self.panel_preferences.Show()
-        self.ctrl = self.panel_preferences.ctrl
 
 
     def InitUI(self, init=True):
@@ -652,6 +654,7 @@ class PreferencesPanel(wx.Panel):
         self.ctrl.prefs.language = language_selected
 
         set_language(preferences_ctrl.get_language_abbr())
+        preferences_ctrl.save()
 
         self.parent.Restart()
 
