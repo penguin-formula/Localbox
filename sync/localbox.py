@@ -124,6 +124,8 @@ class LocalBox(object):
         :return:
         """
         auth_header = self.authenticator.get_authorization_header()
+        if not auth_header:
+            raise InvalidAuthHeader()
         getLogger(__name__).debug('_make_call: %s' % request.get_full_url())
         getLogger(__name__).debug('_make_call auth header: %s' % auth_header)
         request.add_header('Authorization', auth_header)
@@ -346,8 +348,8 @@ class LocalBox(object):
             response = self._make_call(request).read()
             json = loads(response)
             return json
-        except HTTPError:
-            return {}
+        except (InvalidAuthHeader, HTTPError) as e:
+            return {"error": e}
 
     def call_keys(self, localbox_path, passphrase):
         """
@@ -368,6 +370,11 @@ class LocalBox(object):
         key_data = loads(result.read())
         key = pgp_client.decrypt(b64decode(key_data['key']), passphrase)
         iv = pgp_client.decrypt(b64decode(key_data['iv']), passphrase)
+
+        if not key or not iv:
+            getLogger(__name__).error("Failed to decrypt keys with passphrase = %s", passphrase)
+            raise InvalidPassphraseError()
+
         getLogger(__name__).debug("Got key %s for localbox_path %s", getChecksum(key), localbox_path)
 
         return key, iv
@@ -571,6 +578,8 @@ class LocalBox(object):
         encode a file
         """
         key = self.get_aes_key(path, passphrase)
+        if not key:
+            raise NoKeysFoundError()
         result = key.encrypt(contents)
         return result
 
@@ -651,6 +660,11 @@ class InvalidLocalboxURLError(Exception):
     """
     pass
 
+class InvalidAuthHeader(Exception):
+    """
+    Authentication Header doesn't exist
+    """
+    pass
 
 class NoKeysFoundError(Exception):
     """

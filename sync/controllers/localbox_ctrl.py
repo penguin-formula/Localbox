@@ -175,6 +175,55 @@ class SyncItem:
 ctrl = SyncsController()
 
 
+class Server:
+    '''
+    Server object representation
+    '''
+    def __init__(self, label, picture, url):
+        self._label = label
+        self._picture = picture
+        self._url = url
+
+    @property
+    def label(self):
+        return self._label
+
+    @label.setter
+    def label(self, value):
+        self._label = value
+
+    @property
+    def picture(self):
+        return self._picture
+
+    @picture.setter
+    def picture(self, value):
+        self._picture = value
+
+    @property
+    def url(self):
+        return self._url    
+
+    @url.setter
+    def url(self, value):
+        self._url = value
+
+    def __str__(self):
+        return json.dumps(self.__dict__)
+
+    def save(self):
+        label_model.create_server_data(self)
+
+
+def get_server_list():
+    # server1 =  Server(label='PF-EUMAIN', picture='data/icon/localbox.png', url='https://104.45.14.234:5001/')
+    # server2 =  Server(label='LOCALHOST', picture='data/images/share.png', url='https://localhost:5001/')
+    # server3 =  Server(label='PF-EUWEST03', picture='data/images/preferences.png', url='https://104.45.14.234:5001/')
+    # server4 =  Server(label='PF-EUWEST04', picture='data/images/sync.png', url='https://104.45.14.234:5001/')
+    # server5 =  Server(label='PF-EUWEST05', picture='data/images/user.png', url='https://104.45.14.234:5001/')
+
+    return [ Server(label=item[0], url=item[1], picture=item[2]) for item in label_model.get_server_data() ]
+
 def get_localbox_list():
     """
     Get the LocalBoxes as a list of labels.

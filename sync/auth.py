@@ -157,7 +157,7 @@ class Authenticator(object):
                     'client_secret': self.client_secret}
         self._call_authentication_server(authdata)
 
-    def authenticate_with_password(self, username, password):
+    def authenticate_with_password(self, username, password, save=True):
         """
         Do initial authentication with the resource owner password credentials
         """
@@ -178,7 +178,8 @@ class Authenticator(object):
             self._call_authentication_server(authdata)
             if self.access_token is not None:
                 getLogger(__name__).debug('Authentication Successful. Saving Client Data')
-                self.save_client_data()
+                if save:
+                    self.save_client_data()
                 return True
         except (HTTPError, URLError) as error:
             if hasattr(error, 'code') and error.code != 401:  # HTTP Error 401: Unauthorized
@@ -242,9 +243,11 @@ class Authenticator(object):
 
         sql = 'select token from sites where client_id = ?'
         result = database_execute(sql, (self.client_id,))
-        self.access_token = result[0][0]
-        return 'Bearer ' + self.access_token
-
+        if result:
+            self.access_token = result[0][0]
+            return 'Bearer ' + self.access_token
+        else:
+            return {}
 
 class AuthenticationError(Exception):
     """

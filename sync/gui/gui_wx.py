@@ -6,7 +6,7 @@ import wx, os
 
 from sync.controllers import localbox_ctrl
 from sync.controllers.account_ctrl import AccountController
-from sync.controllers.localbox_ctrl import SyncsController, get_localbox_list
+from sync.controllers.localbox_ctrl import SyncsController, get_localbox_list, get_server_list, Server
 from sync.controllers.login_ctrl import LoginController, InvalidPassphraseError
 from sync.controllers.preferences_ctrl import ctrl as preferences_ctrl
 from sync.controllers.shares_ctrl import SharesController, ShareItem
@@ -89,8 +89,12 @@ class Gui(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
         if init:
-            for i in SyncsController().load():
-                PassphraseDialog(self, username=i.user, label=i.label).Show()
+            syncs = SyncsController().load()
+            if syncs:
+                for i in syncs:
+                    PassphraseDialog(self, username=i.user, label=i.label).Show()
+            else:
+                NewSyncWizard(self.panel_syncs.ctrl, self.panel_syncs.event)
 
     def Restart(self):
         self.Hide()
@@ -1193,6 +1197,12 @@ class LocalboxListCtrl(wx.ListCtrl):
                 self.SetItem(item_text)
                 break
 
+    def getServers(self):
+        return get_server_list()
+
+    def addServer(self, label, url, picture):
+        server = Server(label, picture, url)
+        server.save()
 
 class LoxListCtrl(wx.ListCtrl):
     """
@@ -1264,7 +1274,7 @@ class LoginDialog(wx.Dialog):
 
         # Attributes
         self.panel = LoginPanel(self)
-
+  
         # Layout
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.panel, 1, wx.EXPAND)

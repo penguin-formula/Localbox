@@ -1,4 +1,5 @@
 import wx
+import requests
 from sys import prefix as sys_prefix
 from os.path import join, exists
 from sysconfig import get_path
@@ -10,7 +11,7 @@ MAIN_FRAME_SIZE = (700, 500)
 MAIN_PANEL_SIZE = (MAIN_FRAME_SIZE[0], 350)
 PASSPHRASE_DIALOG_SIZE = (500, 300)
 NEW_SYNC_DIALOG_SIZE = (500, 240)
-NEW_SYNC_WIZARD_SIZE = (500, 100)
+NEW_SYNC_WIZARD_SIZE = (500, 300)
 NEW_SYNC_PANEL_SIZE = (NEW_SYNC_DIALOG_SIZE[0], 145)
 MAIN_TITLE = 'YourLocalBox %s' % VERSION_STRING
 PASSPHRASE_TITLE = 'YourLocalBox %s - Enter Passphrase' % VERSION_STRING
@@ -102,3 +103,45 @@ def get_user_secret_input(title, message, frame=False):
         return dlg.GetValue()
     
     dlg.Destroy()
+
+
+class AddServerDialog(wx.Dialog):
+    def __init__(self, parent):
+        wx.Dialog.__init__(self, parent, wx.ID_ANY, "Add new server", size= (450,220))
+        self.panel = wx.Panel(self,wx.ID_ANY)
+
+        self.lbllabel = wx.StaticText(self.panel, label="Label", pos=(20,20))
+        self.server_label = wx.TextCtrl(self.panel, value="", pos=(110,20), size=(300,-1))
+        self.lblurl = wx.StaticText(self.panel, label="Url", pos=(20,60))
+        self.server_url = wx.TextCtrl(self.panel, value="https://localhost:5000/", pos=(110,60), size=(300,-1))
+        self.lblpicture = wx.StaticText(self.panel, label="Picture", pos=(20,100))
+        self.server_picture = wx.TextCtrl(self.panel, value="data/icon/localbox.png", pos=(110,100), size=(300,-1))
+
+        self.saveButton =wx.Button(self.panel, label="Save", pos=(250,150))
+        self.closeButton =wx.Button(self.panel, label="Cancel", pos=(350,150))
+        self.saveButton.Bind(wx.EVT_BUTTON, self.SaveConnString)
+        self.closeButton.Bind(wx.EVT_BUTTON, self.OnQuit)
+        self.Bind(wx.EVT_CLOSE, self.OnQuit)
+        self.Show()
+
+    def OnQuit(self, event):
+        self.result_label = None
+        self.Destroy()
+
+    def SaveConnString(self, event):
+        self.result_label = self.server_label.GetValue()
+        self.result_url = self.server_url.GetValue()
+        self.result_picture = self.server_picture.GetValue()
+
+        if is_valid_input(self.result_label) and is_valid_input(self.result_url) and is_valid_input(self.result_picture):
+
+            try:
+                request = requests.head(self.result_url, verify=False, timeout=1)
+            except requests.exceptions.ConnectionError:
+                show_error_dialog(message="This url is not valid", title="Connection Error")
+            except requests.exceptions.Timeout:
+                show_error_dialog(message="This url is not available at the moment", title="Timeout Error")
+            else:
+                self.Destroy()
+        else:
+            show_error_dialog(message="Please fill all the fields", title="Input Error")

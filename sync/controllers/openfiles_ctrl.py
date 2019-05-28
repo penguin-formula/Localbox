@@ -48,7 +48,7 @@ def load():
     return openfiles_list
 
 
-def remove_all():
+def remove_all(*args, **kwargs):
     getLogger(__name__).info('removing all decrypted files')
     remove_these = filter(lambda fp: os_utils.shred(fp), load())
     map(lambda fp: remove(fp), remove_these)

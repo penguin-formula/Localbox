@@ -48,12 +48,12 @@ class NewSyncWizard(Wizard):
         self.path = None
         self.box_label = None
 
-        self.page1 = NewSyncInputsWizardPage(self)
-        self.page2 = LoginWizardPage(self)
-        self.page_ask_passphrase = PassphraseWizardPage(self)
+        self.page1 = LoginWizardPage(self)
+        self.page2 = NewSyncInputsWizardPage(self)
+        #self.page_ask_passphrase = PassphraseWizardPage(self)
 
         WizardPageSimple.Chain(self.page1, self.page2)
-        WizardPageSimple.Chain(self.page2, self.page_ask_passphrase)
+        #WizardPageSimple.Chain(self.page2, self.page_ask_passphrase)
 
         self.SetPageSize(gui_utils.NEW_SYNC_WIZARD_SIZE)
 
@@ -71,47 +71,33 @@ class NewSyncInputsWizardPage(WizardPageSimple):
         self.parent = parent
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         self._label = wx.TextCtrl(self)
-        self._url = wx.TextCtrl(self)
-        self._selected_dir = wx.TextCtrl(self, style=wx.TE_READONLY)
-        self.btn_select_dir = wx.Button(self, label=_('Select'), size=(95, 30))
+        # self.label = self.parent.box_label
 
-        # Layout
-        self._DoLayout()
+        self.pubkey = None
+        self.privkey = None
+        # self._url = wx.TextCtrl(self)
+
+
+        self._selected_dir = wx.TextCtrl(self, style=wx.TE_READONLY)
+        self._selected_dir.Show(False)
+        self.btn_select_dir = wx.Button(self, label=_('Select'), size=(95, 30))
+        self._pass_label = wx.StaticText(self, label=_('Give Passphrase'))
+        self._entry_passphrase = wx.TextCtrl(self, style=wx.TE_PASSWORD)
+        self._label_repeat = wx.StaticText(self, label=_('Repeat passphrase'))
+        self._entry_repeat_passphrase = wx.TextCtrl(self, style=wx.TE_PASSWORD)
 
         self.Bind(wx.EVT_BUTTON, self.select_localbox_dir, self.btn_select_dir)
-        self.Bind(EVT_WIZARD_BEFORE_PAGE_CHANGED, self.is_authenticated)
+        #self.Bind(EVT_WIZARD_PAGE_CHANGING, self.store_keys)
+        self.Bind(EVT_WIZARD_PAGE_CHANGED, self.layout)
         self.Bind(EVT_WIZARD_PAGE_CHANGING, self.validate_new_sync_inputs)
 
-    def is_authenticated(self, event):
+    # def is_authenticated(self, event):
 
-        if event.GetDirection():
-            # going forwards
-            getLogger(__name__).debug('Checking if is already authenticated for: %s' % self.label)
-            if self.parent.localbox_client and self.parent.localbox_client.authenticator.is_authenticated():
-                WizardPageSimple.Chain(self.parent.page1, self.parent.page_ask_passphrase)
-
-    def _DoLayout(self):
-        sizer = wx.FlexGridSizer(3, 3, 10, 10)
-
-        sizer.Add(wx.StaticText(self, label=_("Label:")),
-                  1, wx.ALIGN_RIGHT)
-        sizer.Add(self._label, 0, wx.EXPAND)
-        sizer.AddGrowableCol(1)
-        sizer.Add(wx.StaticText(self.parent, label=''))
-
-        sizer.Add(wx.StaticText(self, label=_("URL:")),
-                  0, wx.ALIGN_RIGHT)
-        sizer.Add(self._url, 0, wx.EXPAND)
-        sizer.Add(wx.StaticText(self, label=''))
-
-        sizer.Add(wx.StaticText(self, label=_("Path:")),
-                  0, wx.ALIGN_RIGHT)
-        sizer.Add(self._selected_dir, 0, wx.EXPAND)
-        sizer.Add(self.btn_select_dir, 0, wx.EXPAND)
-
-        self._sizer.Add(sizer, 1, wx.ALL | wx.EXPAND, border=10)
-
-        self.SetSizer(self._sizer)
+    #     if event.GetDirection():
+    #         # going forwards
+    #         getLogger(__name__).debug('Checking if is already authenticated for: %s' % self.label)
+    #         if self.parent.localbox_client and self.parent.localbox_client.authenticator.is_authenticated():
+    #             WizardPageSimple.Chain(self.parent.page1, self.parent.page_ask_passphrase)
 
     def select_localbox_dir(self, event):
         dialog = wx.DirDialog(None, _("Choose a file"), style=wx.DD_DEFAULT_STYLE, defaultPath=os.getcwd(),
@@ -124,7 +110,7 @@ class NewSyncInputsWizardPage(WizardPageSimple):
     def validate_new_sync_inputs(self, event):
         # step 1
         label = self.label
-        url = self.url
+        #url = self.url
         path = self.path
 
         # Validate the inputs
@@ -132,11 +118,11 @@ class NewSyncInputsWizardPage(WizardPageSimple):
             gui_utils.show_error_dialog(message=_('%s is not a valid label') % label, title=_('Invalid Label'))
             event.Veto()
             return
-
-        if not gui_utils.is_valid_input(url):
-            gui_utils.show_error_dialog(message=_('%s is not a valid URL') % url, title=_('Invalid URL'))
-            event.Veto()
-            return
+        
+        # if not gui_utils.is_valid_input(url):
+        #     gui_utils.show_error_dialog(message=_('%s is not a valid URL') % url, title=_('Invalid URL'))
+        #     event.Veto()
+        #     return
 
         if not gui_utils.is_valid_input(path):
             gui_utils.show_error_dialog(message=_('%s is not a valid path') % path, title=_('Invalid Path'))
@@ -149,54 +135,145 @@ class NewSyncInputsWizardPage(WizardPageSimple):
             event.Veto()
             return
 
-        try:
-            SyncsController().check_uniq_path(path)
+        # try:
+        #     SyncsController().check_uniq_path(path)
 
-        except PathDoesntExistsException as e:
-            msg = _("Path '{}' doesn't exist").format(e.path)
+        # except PathDoesntExistsException as e:
+        #     msg = _("Path '{}' doesn't exist").format(e.path)
 
-            gui_utils.show_error_dialog(message=msg, title=_('Invalid Path'))
+        #     gui_utils.show_error_dialog(message=msg, title=_('Invalid Path'))
 
-            event.Veto()
-            return
+        #     event.Veto()
+        #     return
 
-        except PathColisionException as e:
-            msg = _("Path '{}' collides with path '{}' of sync {}").format(
-                e.path, e.sync_label, e.sync_path)
+        # except PathColisionException as e:
+        #     msg = _("Path '{}' collides with path '{}' of sync {}").format(
+        #         e.path, e.sync_label, e.sync_path)
 
-            gui_utils.show_error_dialog(message=msg, title=_('Path Collision'))
-            event.Veto()
-            return
+        #     gui_utils.show_error_dialog(message=msg, title=_('Path Collision'))
+        #     event.Veto()
+        #     return
 
-        # Create a localbox instance
-        try:
-            self.parent.localbox_client = LocalBox(url, label, path)
+        # # Create a localbox instance
+        # try:
+        #     self.parent.localbox_client = LocalBox(url, label, path)
 
-        except (URLError, InvalidURL, ValueError) as error:
-            getLogger(__name__).debug("Can't access server")
-            gui_utils.show_error_dialog(
-                message=_('Can\'t connect to server given by URL'),
-                title=_('Can\'t connect to server'))
-            event.Veto()
-            return
+        # except (URLError, InvalidURL, ValueError) as error:
+        #     getLogger(__name__).debug("Can't access server")
+        #     gui_utils.show_error_dialog(
+        #         message=_('Can\'t connect to server given by URL'),
+        #         title=_('Can\'t connect to server'))
+        #     event.Veto()
+        #     return
 
-        except (BadStatusLine, auth.AlreadyAuthenticatedError) as error:
-            getLogger(__name__).debug("error with authentication url thingie")
-            getLogger(__name__).exception(error)
+        # except (BadStatusLine, auth.AlreadyAuthenticatedError) as error:
+        #     getLogger(__name__).debug("error with authentication url thingie")
+        #     getLogger(__name__).exception(error)
 
-            gui_utils.show_error_dialog(message=_('Can\'t authenticate with given username and password.'), title=_('Can\'t authenticate.'))
-            event.Veto()
-            return
+        #     gui_utils.show_error_dialog(message=_('Can\'t authenticate with given username and password.'), title=_('Can\'t authenticate.'))
+        #     event.Veto()
+        #     return
 
-        except SocketError as e:
-            if e.errno != errno.ECONNRESET:
-                raise  # Not error we are looking for
-            getLogger(__name__).error('Failed to connect to server, maybe forgot https? %s', e)
-            event.Veto()
-            return
+        # except SocketError as e:
+        #     if e.errno != errno.ECONNRESET:
+        #         raise  # Not error we are looking for
+        #     getLogger(__name__).error('Failed to connect to server, maybe forgot https? %s', e)
+        #     event.Veto()
+        #     return
 
-        self.parent.box_label = label
+        #self.label = self.parent.box_label
         self.parent.path = path
+        self.parent.localbox_client.authenticator.label = self.label
+        self.parent.localbox_client.label = self.label
+        self.parent.localbox_client.authenticator.save_client_data()
+        self.parent.localbox_client.call_user()
+        self.store_keys(event)
+
+    def store_keys(self, event):
+        try:
+            if event.GetDirection():
+                if self._entry_repeat_passphrase.IsShown() and self.passphrase != self.repeat_passphrase:
+                    gui_utils.show_error_dialog(message=_('Passphrases are not equal'), title=_('Error'))
+                    event.Veto()
+                    return
+
+                # going forward
+                if gui_utils.is_valid_input(self.passphrase):
+                    getLogger(__name__).debug("storing keys")
+
+                    if not LoginController().store_keys(localbox_client=self.parent.localbox_client,
+                                                        pubkey=self.pubkey,
+                                                        privkey=self.privkey,
+                                                        passphrase=self.passphrase):
+                        gui_utils.show_error_dialog(message=_('Wrong passphase'), title=_('Error'))
+                        event.Veto()
+                        return
+
+                    sync_item = self._add_new_sync_item()
+                    create_watchdog(sync_item)
+                else:
+                    event.Veto()
+        except Exception as err:
+            getLogger(__name__).exception('Error storing keys %s' % err)
+
+    def _add_new_sync_item(self):
+        item = SyncItem(url=self.parent.localbox_client.url,
+                        label=self.label,
+                        direction='sync',
+                        path=self.path,
+                        user=self.parent.localbox_client.authenticator.username)
+        self.parent.ctrl.add(item)
+        self.parent.ctrl.save()
+        self.parent.event.set()
+        getLogger(__name__).debug("new sync saved")
+        return item
+
+    def layout(self, wx_event):
+        # Layout
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        input_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        input_sizer.Add(wx.StaticText(self, label=_("Label")))
+        input_sizer.Add(self._label, 0, wx.EXPAND)
+
+        input_sizer.Add(wx.StaticText(self, label=_("Path")))
+        input_sizer.Add(self.btn_select_dir, 0, wx.EXPAND)
+
+        main_sizer.Add(input_sizer, 1, flag=wx.EXPAND | wx.ALL, border=gui_utils.DEFAULT_BORDER)
+
+        input_sizer = wx.BoxSizer(wx.VERTICAL)
+        input_sizer.Add(self._pass_label, 0, flag=wx.EXPAND | wx.ALL)
+        input_sizer.Add(self._entry_passphrase, 0, flag=wx.EXPAND | wx.ALL)
+        input_sizer.Add(self._label_repeat, 0, flag=wx.EXPAND | wx.ALL)
+        input_sizer.Add(self._entry_repeat_passphrase, 0, flag=wx.EXPAND | wx.ALL)
+
+        main_sizer.Add(input_sizer, 1, flag=wx.EXPAND | wx.ALL, border=gui_utils.DEFAULT_BORDER)
+
+        result = self.parent.localbox_client.call_user()
+
+        if 'private_key' in result and 'public_key' in result:
+            getLogger(__name__).debug("private key and public key found")
+
+            self.privkey = result['private_key']
+            self.pubkey = result['public_key']
+
+            self._label_repeat.Show(False)
+            self._entry_repeat_passphrase.Show(False)
+
+            self._pass_label.SetLabel(_('Give Passphrase'))
+        else:
+            getLogger(__name__).debug("private key or public key not found: %s" % str(result))
+
+            self._label_repeat.Show(True)
+            self._entry_repeat_passphrase.Show(True)
+
+            self._pass_label.SetLabel(_('New Passphrase'))
+
+        self._sizer.Add(main_sizer, 1, wx.ALL | wx.EXPAND, border=10)
+
+        self.SetSizer(self._sizer)
+        self.Layout()
 
     @property
     def path(self):
@@ -206,9 +283,17 @@ class NewSyncInputsWizardPage(WizardPageSimple):
     def label(self):
         return self._label.GetValue().encode()
 
+    # @property
+    # def url(self):
+    #     return self._url.GetValue().encode()
+
     @property
-    def url(self):
-        return self._url.GetValue().encode()
+    def passphrase(self):
+        return self._entry_passphrase.GetValue()
+
+    @property
+    def repeat_passphrase(self):
+        return self._entry_repeat_passphrase.GetValue()
 
 
 class LoginWizardPage(WizardPageSimple):
@@ -225,11 +310,36 @@ class LoginWizardPage(WizardPageSimple):
         self.main_sizer = main_sizer
 
         input_sizer = wx.BoxSizer(wx.VERTICAL)
-        input_sizer.Add(wx.StaticText(self, label=_("Username:")),
-                        0, wx.ALL | wx.ALIGN_LEFT)
+
+        # Server logo
+
+        image = wx.Image('data/icon/localbox.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        self.imageBitmap = wx.StaticBitmap(self, wx.ID_ANY, image)
+        input_sizer.Add(self.imageBitmap, 0, wx.ALL | wx.CENTER)
+        input_sizer.Add(wx.StaticText(self, label=_("Server")), 0, wx.ALL | wx.CENTER)   
+
+
+        # Horizontal grid for servers dropdown and add server button
+        hbox = wx.BoxSizer(wx.HORIZONTAL) 
+
+        ## Servers dropdown select
+        servers = self.parent.ctrl.getServers() 
+        self.server_choices = wx.Choice(self, wx.ID_ANY, choices = [server.label for server in servers])
+        self.server_choices.Bind(wx.EVT_CHOICE, self.OnChoice)
+        self.server_choices.SetSelection(0)
+        hbox.Add(self.server_choices, 0, wx.ALL)
+
+        ## Add server button
+        self.add_server_button = wx.Button(self,wx.ID_ANY, style=wx.BU_EXACTFIT, size=( 35, self.server_choices.Size[1]))
+        self.add_server_button.SetBitmapLabel(wx.ArtProvider.GetBitmap(wx.ART_PLUS, wx.ART_MENU))
+        self.add_server_button.Bind(wx.EVT_BUTTON, self.OnButton)
+        hbox.Add(self.add_server_button,0,wx.ALL)
+
+        input_sizer.Add(hbox,1,wx.ALL|wx.CENTER)
+
+        input_sizer.Add(wx.StaticText(self, label=_("Username")), 0, wx.ALL | wx.ALIGN_LEFT)
         input_sizer.Add(self._username, 0, wx.ALL | wx.EXPAND)
-        input_sizer.Add(wx.StaticText(self, label=_("Password:")),
-                        0, wx.ALL | wx.ALIGN_LEFT, border=gui_utils.DEFAULT_BORDER)
+        input_sizer.Add(wx.StaticText(self, label=_("Password")), 0, wx.ALL | wx.ALIGN_LEFT, border=gui_utils.DEFAULT_BORDER)
         input_sizer.Add(self._password, 0, wx.ALL | wx.EXPAND)
 
         main_sizer.Add(input_sizer, 1, wx.ALL | wx.EXPAND, border=gui_utils.DEFAULT_BORDER)
@@ -249,6 +359,16 @@ class LoginWizardPage(WizardPageSimple):
         # self.Bind(EVT_WIZARD_PAGE_CHANGING, self.passphrase_page)
 
         self.layout_inputs()
+        if self.getSelectedServer():
+            self.check_server_connection(self.getSelectedServer())
+
+    @property
+    def username(self):
+        return self._username.GetValue()
+
+    @property
+    def password(self):
+        return self._password.GetValue()
 
     def passphrase_page(self, event):
         getLogger(__name__).debug('EVT_WIZARD_BEFORE_PAGE_CHANGED')
@@ -295,7 +415,8 @@ class LoginWizardPage(WizardPageSimple):
                     try:
                         success = self.parent.localbox_client.authenticator.authenticate_with_password(
                             self.username,
-                            self.password)
+                            self.password,
+                            False)
                     except Exception as error:
                         success = False
                         getLogger(__name__).exception(
@@ -304,19 +425,67 @@ class LoginWizardPage(WizardPageSimple):
                     if not success:
                         title = _('Error')
                         error_msg = _("Username/Password incorrect")
-
                         gui_utils.show_error_dialog(message=error_msg, title=title)
                         event.Veto()
                 else:
+                    title = _('Error')
+                    error_msg = _("Username/Password incorrect")
+                    gui_utils.show_error_dialog(message=error_msg, title=title)
                     event.Veto()
 
-    @property
-    def username(self):
-        return self._username.GetValue()
+    def OnChoice(self, event): 
+        getLogger(__name__).debug("New choice selected... %s ", self.server_choices.GetSelection())
+        selected_server = self.getSelectedServer(self.server_choices.GetSelection())
+        image = wx.Image(selected_server.picture, wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        self.imageBitmap.SetBitmap(image)
+        self.imageBitmap.Refresh()
+        self.check_server_connection(selected_server)
 
-    @property
-    def password(self):
-        return self._password.GetValue()
+    def OnButton(self,event):
+        dlg = gui_utils.AddServerDialog(parent=self)
+        dlg.ShowModal()
+        getLogger(__name__).debug("Add server button clicked!")
+        if dlg.result_label:
+            self.parent.ctrl.addServer(dlg.result_label, dlg.result_url, dlg.result_picture)
+            self.server_choices.SetItems([server.label for server in self.parent.ctrl.getServers()])
+            self.server_choices.SetSelection(self.server_choices.GetCount()-1)
+            self.OnChoice(event)
+
+
+    def getSelectedServer(self, index=0):
+        try:
+            return self.parent.ctrl.getServers()[index]
+        except IndexError:
+            return None
+
+    def check_server_connection(self, server):
+        try:
+            getLogger(__name__).debug("Connecting to server %s, %s", server.url, server.label)
+            self.parent.localbox_client = LocalBox(server.url, server.label, None)
+
+        except (URLError, InvalidURL, ValueError) as error:
+            getLogger(__name__).debug("Can't access server")
+            gui_utils.show_error_dialog(
+                message=_('Can\'t connect to server given by URL'),
+                title=_('Can\'t connect to server'))
+            return
+
+        except (BadStatusLine, auth.AlreadyAuthenticatedError) as error:
+            getLogger(__name__).debug("error with authentication url thingie")
+            getLogger(__name__).exception(error)
+
+            gui_utils.show_error_dialog(message=_('Can\'t authenticate with given username and password.'), title=_('Can\'t authenticate.'))
+            return
+
+        except SocketError as e:
+            if e.errno != errno.ECONNRESET:
+                raise  # Not error we are looking for
+            getLogger(__name__).error('Failed to connect to server, maybe forgot https? %s', e)
+            return
+
+        finally:
+            self.parent.box_label = server.label        
+
 
 
 class PassphraseWizardPage(WizardPageSimple):

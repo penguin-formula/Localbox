@@ -129,8 +129,9 @@ def sqlite_execute(command, params=None):
         if init_db:
             for sql in ('CREATE TABLE sites (site char(255), client_id'
                         ' char(255), client_secret char(255), user char(255), token char(255));',
-                        'CREATE TABLE keys (site char(255), user char(255),'
-                        ' fingerprint char(40));'):
+                        'CREATE TABLE keys (site char(255), user char(255), fingerprint char(40));',
+                        'CREATE TABLE servers (label char(255), url char(255), picture blob);'
+                        ):
                 if sql != "" and sql is not None:
                     cursor.execute(sql)
                     connection.commit()
