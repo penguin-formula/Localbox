@@ -115,7 +115,7 @@ class AddServerDialog(wx.Dialog):
         self.lblurl = wx.StaticText(self.panel, label="Url", pos=(20,60))
         self.server_url = wx.TextCtrl(self.panel, value="https://localhost:5000/", pos=(110,60), size=(300,-1))
         self.lblpicture = wx.StaticText(self.panel, label="Picture", pos=(20,100))
-        self.server_picture = wx.TextCtrl(self.panel, value="data/icon/localbox.png", pos=(110,100), size=(300,-1))
+        self.server_picture = wx.TextCtrl(self.panel, value="/usr/localbox/localbox.png", pos=(110,100), size=(300,-1))
 
         self.saveButton =wx.Button(self.panel, label="Save", pos=(250,150))
         self.closeButton =wx.Button(self.panel, label="Cancel", pos=(350,150))
