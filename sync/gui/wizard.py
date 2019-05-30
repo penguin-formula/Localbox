@@ -50,250 +50,16 @@ class NewSyncWizard(Wizard):
 
         self.page1 = LoginWizardPage(self)
         self.page2 = NewSyncInputsWizardPage(self)
-        #self.page_ask_passphrase = PassphraseWizardPage(self)
+        self.page3 = PassphraseWizardPage(self)
 
         WizardPageSimple.Chain(self.page1, self.page2)
-        #WizardPageSimple.Chain(self.page2, self.page_ask_passphrase)
+        WizardPageSimple.Chain(self.page2, self.page3)
 
         self.SetPageSize(gui_utils.NEW_SYNC_WIZARD_SIZE)
 
         self.RunWizard(self.page1)
 
         self.Destroy()
-
-
-class NewSyncInputsWizardPage(WizardPageSimple):
-    def __init__(self, parent):
-        """Constructor"""
-        WizardPageSimple.__init__(self, parent)
-
-        # Attributes
-        self.parent = parent
-        self._sizer = wx.BoxSizer(wx.VERTICAL)
-        self._label = wx.TextCtrl(self)
-        # self.label = self.parent.box_label
-
-        self.pubkey = None
-        self.privkey = None
-        # self._url = wx.TextCtrl(self)
-
-
-        self._selected_dir = wx.TextCtrl(self, style=wx.TE_READONLY)
-        self._selected_dir.Show(False)
-        self.btn_select_dir = wx.Button(self, label=_('Select'), size=(95, 30))
-        self._pass_label = wx.StaticText(self, label=_('Give Passphrase'))
-        self._entry_passphrase = wx.TextCtrl(self, style=wx.TE_PASSWORD)
-        self._label_repeat = wx.StaticText(self, label=_('Repeat passphrase'))
-        self._entry_repeat_passphrase = wx.TextCtrl(self, style=wx.TE_PASSWORD)
-
-        self.Bind(wx.EVT_BUTTON, self.select_localbox_dir, self.btn_select_dir)
-        #self.Bind(EVT_WIZARD_PAGE_CHANGING, self.store_keys)
-        self.Bind(EVT_WIZARD_PAGE_CHANGED, self.layout)
-        self.Bind(EVT_WIZARD_PAGE_CHANGING, self.validate_new_sync_inputs)
-
-    # def is_authenticated(self, event):
-
-    #     if event.GetDirection():
-    #         # going forwards
-    #         getLogger(__name__).debug('Checking if is already authenticated for: %s' % self.label)
-    #         if self.parent.localbox_client and self.parent.localbox_client.authenticator.is_authenticated():
-    #             WizardPageSimple.Chain(self.parent.page1, self.parent.page_ask_passphrase)
-
-    def select_localbox_dir(self, event):
-        dialog = wx.DirDialog(None, _("Choose a file"), style=wx.DD_DEFAULT_STYLE, defaultPath=os.getcwd(),
-                              pos=(10, 10))
-        if dialog.ShowModal() == wx.ID_OK:
-            self._selected_dir.SetValue(dialog.GetPath())
-
-        dialog.Destroy()
-
-    def validate_new_sync_inputs(self, event):
-        # step 1
-        label = self.label
-        #url = self.url
-        path = self.path
-
-        # Validate the inputs
-        if not gui_utils.is_valid_input(label):
-            gui_utils.show_error_dialog(message=_('%s is not a valid label') % label, title=_('Invalid Label'))
-            event.Veto()
-            return
-        
-        # if not gui_utils.is_valid_input(url):
-        #     gui_utils.show_error_dialog(message=_('%s is not a valid URL') % url, title=_('Invalid URL'))
-        #     event.Veto()
-        #     return
-
-        if not gui_utils.is_valid_input(path):
-            gui_utils.show_error_dialog(message=_('%s is not a valid path') % path, title=_('Invalid Path'))
-            event.Veto()
-            return
-
-        # Check if the label of the directory are already in the Syncs
-        if not SyncsController().check_uniq_label(label):
-            gui_utils.show_error_dialog(message=_('Label "%s" already exists') % label, title=_('Invalid Label'))
-            event.Veto()
-            return
-
-        # try:
-        #     SyncsController().check_uniq_path(path)
-
-        # except PathDoesntExistsException as e:
-        #     msg = _("Path '{}' doesn't exist").format(e.path)
-
-        #     gui_utils.show_error_dialog(message=msg, title=_('Invalid Path'))
-
-        #     event.Veto()
-        #     return
-
-        # except PathColisionException as e:
-        #     msg = _("Path '{}' collides with path '{}' of sync {}").format(
-        #         e.path, e.sync_label, e.sync_path)
-
-        #     gui_utils.show_error_dialog(message=msg, title=_('Path Collision'))
-        #     event.Veto()
-        #     return
-
-        # # Create a localbox instance
-        # try:
-        #     self.parent.localbox_client = LocalBox(url, label, path)
-
-        # except (URLError, InvalidURL, ValueError) as error:
-        #     getLogger(__name__).debug("Can't access server")
-        #     gui_utils.show_error_dialog(
-        #         message=_('Can\'t connect to server given by URL'),
-        #         title=_('Can\'t connect to server'))
-        #     event.Veto()
-        #     return
-
-        # except (BadStatusLine, auth.AlreadyAuthenticatedError) as error:
-        #     getLogger(__name__).debug("error with authentication url thingie")
-        #     getLogger(__name__).exception(error)
-
-        #     gui_utils.show_error_dialog(message=_('Can\'t authenticate with given username and password.'), title=_('Can\'t authenticate.'))
-        #     event.Veto()
-        #     return
-
-        # except SocketError as e:
-        #     if e.errno != errno.ECONNRESET:
-        #         raise  # Not error we are looking for
-        #     getLogger(__name__).error('Failed to connect to server, maybe forgot https? %s', e)
-        #     event.Veto()
-        #     return
-
-        #self.label = self.parent.box_label
-        self.parent.path = path
-        self.parent.localbox_client.authenticator.label = self.label
-        self.parent.localbox_client.label = self.label
-        self.parent.localbox_client.authenticator.save_client_data()
-        self.parent.localbox_client.call_user()
-        self.store_keys(event)
-
-    def store_keys(self, event):
-        try:
-            if event.GetDirection():
-                if self._entry_repeat_passphrase.IsShown() and self.passphrase != self.repeat_passphrase:
-                    gui_utils.show_error_dialog(message=_('Passphrases are not equal'), title=_('Error'))
-                    event.Veto()
-                    return
-
-                # going forward
-                if gui_utils.is_valid_input(self.passphrase):
-                    getLogger(__name__).debug("storing keys")
-
-                    if not LoginController().store_keys(localbox_client=self.parent.localbox_client,
-                                                        pubkey=self.pubkey,
-                                                        privkey=self.privkey,
-                                                        passphrase=self.passphrase):
-                        gui_utils.show_error_dialog(message=_('Wrong passphase'), title=_('Error'))
-                        event.Veto()
-                        return
-
-                    sync_item = self._add_new_sync_item()
-                    create_watchdog(sync_item)
-                else:
-                    event.Veto()
-        except Exception as err:
-            getLogger(__name__).exception('Error storing keys %s' % err)
-
-    def _add_new_sync_item(self):
-        item = SyncItem(url=self.parent.localbox_client.url,
-                        label=self.label,
-                        direction='sync',
-                        path=self.path,
-                        user=self.parent.localbox_client.authenticator.username)
-        self.parent.ctrl.add(item)
-        self.parent.ctrl.save()
-        self.parent.event.set()
-        getLogger(__name__).debug("new sync saved")
-        return item
-
-    def layout(self, wx_event):
-        # Layout
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-
-        input_sizer = wx.BoxSizer(wx.VERTICAL)
-
-        input_sizer.Add(wx.StaticText(self, label=_("Label")))
-        input_sizer.Add(self._label, 0, wx.EXPAND)
-
-        input_sizer.Add(wx.StaticText(self, label=_("Path")))
-        input_sizer.Add(self.btn_select_dir, 0, wx.EXPAND)
-
-        main_sizer.Add(input_sizer, 1, flag=wx.EXPAND | wx.ALL, border=gui_utils.DEFAULT_BORDER)
-
-        input_sizer = wx.BoxSizer(wx.VERTICAL)
-        input_sizer.Add(self._pass_label, 0, flag=wx.EXPAND | wx.ALL)
-        input_sizer.Add(self._entry_passphrase, 0, flag=wx.EXPAND | wx.ALL)
-        input_sizer.Add(self._label_repeat, 0, flag=wx.EXPAND | wx.ALL)
-        input_sizer.Add(self._entry_repeat_passphrase, 0, flag=wx.EXPAND | wx.ALL)
-
-        main_sizer.Add(input_sizer, 1, flag=wx.EXPAND | wx.ALL, border=gui_utils.DEFAULT_BORDER)
-
-        result = self.parent.localbox_client.call_user()
-
-        if 'private_key' in result and 'public_key' in result:
-            getLogger(__name__).debug("private key and public key found")
-
-            self.privkey = result['private_key']
-            self.pubkey = result['public_key']
-
-            self._label_repeat.Show(False)
-            self._entry_repeat_passphrase.Show(False)
-
-            self._pass_label.SetLabel(_('Give Passphrase'))
-        else:
-            getLogger(__name__).debug("private key or public key not found: %s" % str(result))
-
-            self._label_repeat.Show(True)
-            self._entry_repeat_passphrase.Show(True)
-
-            self._pass_label.SetLabel(_('New Passphrase'))
-
-        self._sizer.Add(main_sizer, 1, wx.ALL | wx.EXPAND, border=10)
-
-        self.SetSizer(self._sizer)
-        self.Layout()
-
-    @property
-    def path(self):
-        return self._selected_dir.GetValue()
-
-    @property
-    def label(self):
-        return self._label.GetValue().encode()
-
-    # @property
-    # def url(self):
-    #     return self._url.GetValue().encode()
-
-    @property
-    def passphrase(self):
-        return self._entry_passphrase.GetValue()
-
-    @property
-    def repeat_passphrase(self):
-        return self._entry_repeat_passphrase.GetValue()
 
 
 class LoginWizardPage(WizardPageSimple):
@@ -339,7 +105,7 @@ class LoginWizardPage(WizardPageSimple):
 
         input_sizer.Add(wx.StaticText(self, label=_("Username")), 0, wx.ALL | wx.ALIGN_LEFT)
         input_sizer.Add(self._username, 0, wx.ALL | wx.EXPAND)
-        input_sizer.Add(wx.StaticText(self, label=_("Password")), 0, wx.ALL | wx.ALIGN_LEFT, border=gui_utils.DEFAULT_BORDER)
+        input_sizer.Add(wx.StaticText(self, label=_("Password")), 0, wx.ALL | wx.ALIGN_LEFT)
         input_sizer.Add(self._password, 0, wx.ALL | wx.EXPAND)
 
         main_sizer.Add(input_sizer, 1, wx.ALL | wx.EXPAND, border=gui_utils.DEFAULT_BORDER)
@@ -360,6 +126,7 @@ class LoginWizardPage(WizardPageSimple):
 
         self.layout_inputs()
         if self.getSelectedServer():
+            self.parent.selected_server = self.getSelectedServer()
             self.check_server_connection(self.getSelectedServer())
 
     @property
@@ -370,6 +137,7 @@ class LoginWizardPage(WizardPageSimple):
     def password(self):
         return self._password.GetValue()
 
+    #DEPRECATED
     def passphrase_page(self, event):
         getLogger(__name__).debug('EVT_WIZARD_BEFORE_PAGE_CHANGED')
 
@@ -394,6 +162,7 @@ class LoginWizardPage(WizardPageSimple):
         self.main_sizer.ShowItems(show=True)
         self.SetSizer(self.main_sizer)
 
+    #DEPRECATED??
     def should_login(self, event):
         getLogger(__name__).debug('should_login: EVT_WIZARD_BEFORE_PAGE_CHANGED')
 
@@ -407,6 +176,13 @@ class LoginWizardPage(WizardPageSimple):
 
     def call_password_authentication(self, event):
         getLogger(__name__).debug("authenticating... - direction: %s", event.GetDirection())
+
+        if not self.parent.localbox_client:
+            gui_utils.show_error_dialog(
+                message=_('Can\'t connect to server'),
+                title=_('Can\'t connect to server'))            
+            event.Veto()
+            return False
 
         if event.GetDirection():
             # going forwards
@@ -435,11 +211,11 @@ class LoginWizardPage(WizardPageSimple):
 
     def OnChoice(self, event): 
         getLogger(__name__).debug("New choice selected... %s ", self.server_choices.GetSelection())
-        selected_server = self.getSelectedServer(self.server_choices.GetSelection())
-        image = wx.Image(selected_server.picture, wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        self.parent.selected_server = self.getSelectedServer(self.server_choices.GetSelection())
+        image = wx.Image(self.parent.selected_server .picture, wx.BITMAP_TYPE_PNG).ConvertToBitmap()
         self.imageBitmap.SetBitmap(image)
         self.imageBitmap.Refresh()
-        self.check_server_connection(selected_server)
+        self.check_server_connection(self.parent.selected_server)
 
     def OnButton(self,event):
         dlg = gui_utils.AddServerDialog(parent=self)
@@ -450,7 +226,6 @@ class LoginWizardPage(WizardPageSimple):
             self.server_choices.SetItems([server.label for server in self.parent.ctrl.getServers()])
             self.server_choices.SetSelection(self.server_choices.GetCount()-1)
             self.OnChoice(event)
-
 
     def getSelectedServer(self, index=0):
         try:
@@ -468,6 +243,7 @@ class LoginWizardPage(WizardPageSimple):
             gui_utils.show_error_dialog(
                 message=_('Can\'t connect to server given by URL'),
                 title=_('Can\'t connect to server'))
+            self.parent.localbox_client = None
             return
 
         except (BadStatusLine, auth.AlreadyAuthenticatedError) as error:
@@ -475,17 +251,143 @@ class LoginWizardPage(WizardPageSimple):
             getLogger(__name__).exception(error)
 
             gui_utils.show_error_dialog(message=_('Can\'t authenticate with given username and password.'), title=_('Can\'t authenticate.'))
+            self.parent.localbox_client = None
             return
 
         except SocketError as e:
             if e.errno != errno.ECONNRESET:
-                raise  # Not error we are looking for
+                raise  # Not the error we are looking for
             getLogger(__name__).error('Failed to connect to server, maybe forgot https? %s', e)
+            self.parent.localbox_client = None
             return
 
         finally:
             self.parent.box_label = server.label        
 
+
+class NewSyncInputsWizardPage(WizardPageSimple):
+    def __init__(self, parent):
+        """Constructor"""
+        WizardPageSimple.__init__(self, parent)
+
+        # Attributes
+        self.parent = parent
+        self._sizer = wx.BoxSizer(wx.VERTICAL)
+
+        image = wx.Image('data/icon/localbox.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        self.imageBitmap = wx.StaticBitmap(self, wx.ID_ANY, image)
+        self._sizer.Add(self.imageBitmap, 0, wx.ALL | wx.CENTER)
+        self.server_label = wx.StaticText(self, label=_("Server"))
+        self._sizer.Add(self.server_label, 1, wx.ALL | wx.CENTER)   
+
+
+        self._label = wx.TextCtrl(self)
+        self._selected_dir = wx.TextCtrl(self, style=wx.TE_READONLY)
+        self._selected_dir.Show(False)
+        self.btn_select_dir = wx.Button(self, label=_('Select'), size=(95, 30))
+
+        # Layout
+        self._DoLayout()
+
+        self.Bind(wx.EVT_BUTTON, self.select_localbox_dir, self.btn_select_dir)
+        self.Bind(EVT_WIZARD_PAGE_CHANGING, self.validate_new_sync_inputs)
+        self.Bind(EVT_WIZARD_PAGE_CHANGED, self.layout)
+
+
+    def _DoLayout(self):
+        sizer = wx.FlexGridSizer(3, 3, 10, 10)
+
+        sizer.Add(wx.StaticText(self, label=_("Label")), 1, wx.ALIGN_RIGHT)
+        sizer.Add(self._label, 0, wx.EXPAND)
+        sizer.AddGrowableCol(1)
+        sizer.Add(wx.StaticText(self.parent, label=''))
+
+        sizer.Add(wx.StaticText(self, label=_("Path")), 0, wx.ALIGN_RIGHT)
+        sizer.Add(self._selected_dir, 0, wx.EXPAND)
+        sizer.Add(self.btn_select_dir, 0, wx.EXPAND)
+
+        self._sizer.Add(sizer, 1, wx.ALL | wx.EXPAND, border=5)
+
+        self.SetSizer(self._sizer)
+
+    def layout(self, event):
+        image = wx.Image(self.parent.selected_server.picture, wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        self.imageBitmap.SetBitmap(image)
+        self.imageBitmap.Refresh()
+        self.server_label.SetLabel(self.parent.selected_server.label)
+        self.server_label.Refresh()
+
+    def select_localbox_dir(self, event):
+        dialog = wx.DirDialog(None, _("Choose a file"), style=wx.DD_DEFAULT_STYLE, defaultPath=os.getcwd(),
+                              pos=(10, 10))
+        if dialog.ShowModal() == wx.ID_OK:
+            self._selected_dir.SetValue(dialog.GetPath())
+            self._selected_dir.Show(True)
+
+        dialog.Destroy()
+
+    def validate_new_sync_inputs(self, event):
+        # step 1
+        label = self.label
+        path = self.path
+
+        # Always allow to go back
+        if not event.GetDirection():
+            return True
+
+        # Validate the inputs
+        if not gui_utils.is_valid_input(label):
+            gui_utils.show_error_dialog(message=_('%s is not a valid label') % label, title=_('Invalid Label'))
+            event.Veto()
+            return
+
+        if not gui_utils.is_valid_input(path):
+            gui_utils.show_error_dialog(message=_('%s is not a valid path') % path, title=_('Invalid Path'))
+            event.Veto()
+            return
+
+        # Check if the label of the directory are already in the Syncs
+        if not SyncsController().check_uniq_label(label):
+            gui_utils.show_error_dialog(message=_('Label "%s" already exists') % label, title=_('Invalid Label'))
+            event.Veto()
+            return
+
+
+        try:
+            SyncsController().check_uniq_path(path)
+
+        except PathDoesntExistsException as e:
+            msg = _("Path '{}' doesn't exist").format(e.path)
+
+            gui_utils.show_error_dialog(message=msg, title=_('Invalid Path'))
+
+            event.Veto()
+            return
+
+        except PathColisionException as e:
+            msg = _("Path '{}' collides with path '{}' of sync {}").format(
+                e.path, e.sync_label, e.sync_path)
+
+            gui_utils.show_error_dialog(message=msg, title=_('Path Collision'))
+            event.Veto()
+            return
+
+
+
+        #self.label = self.parent.box_label
+        self.parent.box_label = label
+        self.parent.path = path
+        self.parent.localbox_client.authenticator.label = self.label
+        self.parent.localbox_client.label = self.label
+        self.parent.localbox_client.authenticator.save_client_data()
+
+    @property
+    def path(self):
+        return self._selected_dir.GetValue()
+
+    @property
+    def label(self):
+        return self._label.GetValue().encode()
 
 
 class PassphraseWizardPage(WizardPageSimple):

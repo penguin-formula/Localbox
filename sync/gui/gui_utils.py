@@ -138,9 +138,9 @@ class AddServerDialog(wx.Dialog):
             try:
                 request = requests.head(self.result_url, verify=False, timeout=1)
             except requests.exceptions.ConnectionError:
-                show_error_dialog(message="This url is not valid", title="Connection Error")
+                show_error_dialog(message="Not available: \"{}\" is not responding.".format(self.result_url), title="Connection Error")
             except requests.exceptions.Timeout:
-                show_error_dialog(message="This url is not available at the moment", title="Timeout Error")
+                show_error_dialog(message="Timeout : This url is not available at the moment", title="Timeout Error")
             else:
                 self.Destroy()
         else:
