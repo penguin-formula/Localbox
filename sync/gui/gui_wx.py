@@ -3,6 +3,7 @@ from logging import getLogger
 from json import loads
 
 import wx, os
+import wx.lib.agw.hyperlink as hl
 
 from sync.controllers import localbox_ctrl
 from sync.controllers.account_ctrl import AccountController
@@ -59,7 +60,7 @@ class Gui(wx.Frame):
         self.panel_shares = SharePanel(self)
         self.panel_account = AccountPanel(self)
         self.panel_preferences = PreferencesPanel(self)
-        #self.panel_bottom = BottomPanel(self)
+        self.panel_bottom = BottomPanel(self)
         self.panel_line = wx.Panel(self)
 
         line_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -74,7 +75,7 @@ class Gui(wx.Frame):
         bSizer1.Add(self.panel_shares, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_account, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_preferences, 0, wx.EXPAND, 10)
-        # bSizer1.Add(self.panel_bottom, 0, wx.ALIGN_BOTTOM, 10)
+        bSizer1.Add(self.panel_bottom, 0, wx.ALIGN_BOTTOM, 10)
 
         self.SetSizer(bSizer1)
 
@@ -112,7 +113,7 @@ class Gui(wx.Frame):
         self.panel_shares = SharePanel(self)
         self.panel_account = AccountPanel(self)
         self.panel_preferences = PreferencesPanel(self)
-        # self.panel_bottom = BottomPanel(self)
+        self.panel_bottom = BottomPanel(self)
         self.panel_line = wx.Panel(self)
 
         line_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -125,7 +126,7 @@ class Gui(wx.Frame):
         bSizer1.Add(self.panel_shares, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_account, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_preferences, 0, wx.EXPAND, 10)
-        # bSizer1.Add(self.panel_bottom, 0, wx.ALIGN_BOTTOM, 10)
+        bSizer1.Add(self.panel_bottom, 0, wx.ALIGN_BOTTOM, 10)
 
         self.toolbar_panels = dict()
         self.InitUI(False)
@@ -325,7 +326,7 @@ class LocalboxPanel(LoxPanel):
         hbox4.Add(self.btn_del, 0, wx.EXPAND)
         vbox.Add(hbox4, flag=wx.ALIGN_CENTER | wx.CENTER | wx.EXPAND | wx.EAST | wx.WEST, border=10)
 
-        vbox.Add((-1, 25))
+        vbox.Add((-1, 5))
 
         self.SetSizer(vbox)
 
@@ -443,7 +444,8 @@ class SharePanel(LoxPanel):
         self.SetSizer(vbox)
 
     def on_btn_refresh(self, wx_event):
-        self.sync()
+        return #Disable for now
+        #self.sync()
 
     def on_btn_add(self, wx_event):
         NewShareDialog(self, self.ctrl)
@@ -726,48 +728,42 @@ class BottomPanel(wx.Panel):
     """
 
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, id=wx.ID_ANY, size=(MAIN_PANEL_SIZE[0], 500))
+        wx.Panel.__init__(self, parent, id=wx.ID_ANY, size=(MAIN_PANEL_SIZE[0], 100))
 
         # Attributes
         self.parent = parent
-        self.btn_ok = wx.Button(self, id=wx.ID_OK, label=_('Ok'))
-        self.btn_apply = wx.Button(self, id=wx.ID_APPLY, label=_('Apply'))
-        self.btn_close = wx.Button(self, id=wx.ID_CLOSE, label=_('Close'))
+        self.ctrl = AccountController()
 
         # Layout
         self._DoLayout()
 
-        # Event Handlers
-        self.Bind(wx.EVT_BUTTON, self.OnClickOk, id=self.btn_ok.Id)
-        self.Bind(wx.EVT_BUTTON, self.ApplyOnClick, id=self.btn_apply.Id)
-        self.Bind(wx.EVT_BUTTON, self.CloseOnClick, id=self.btn_close.Id)
-
     def _DoLayout(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        btn_szr = wx.StdDialogButtonSizer()
-
-        btn_szr.AddButton(self.btn_ok)
-        btn_szr.AddButton(self.btn_apply)
-        btn_szr.AddButton(self.btn_close)
-
-        btn_szr.Realize()
-
-        main_sizer.Add(wx.StaticLine(self, -1), 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
-        main_sizer.Add(btn_szr)  # , border=DEFAULT_BORDER)
+        main_sizer.Add((0,5))
+        main_sizer.Add(wx.StaticLine(self, -1), 0, wx.ALL | wx.EXPAND, border=1)
+        main_sizer.Add(self.get_user_message(), 0, wx.ALL | wx.EXPAND, border=1)
         self.SetSizer(main_sizer)
+
+    def get_user_message(self):
+        invites = self.ctrl.load_invites()
+        if len(invites) > 0:
+            label = _('You have {0} invitation(s) to review.'.format(str(len(invites))))
+            self.hyperlink = hl.HyperLinkCtrl(self, -1, label=label, pos=(100, 100), URL="#")
+            self.hyperlink.AutoBrowse(False)
+            self.hyperlink.Bind(hl.EVT_HYPERLINK_LEFT, self.OnClickOk)
+            return self.hyperlink
+        else:
+            username = ''
+            for item in SyncsController().load():
+                username = item.user
+                break
+            label = _('Hello {0}, You have no pending action on your account').format(username)
+            return wx.StaticText(self, label=label)
 
     def OnClickOk(self, event):
         getLogger(__name__).debug('OkOnClick')
-        self.parent.ctrl.save()
-        #self.parent.Hide()
-
-    def ApplyOnClick(self, event):
-        getLogger(__name__).debug('ApplyOnClick')
-        self.parent.ctrl.save()
-
-    def CloseOnClick(self, event):
-        getLogger(__name__).debug('CloseOnClick')
-        #self.parent.Hide()
+        # self.parent.ctrl.save()
+        # self.parent.Hide()
 
 
 class NewSharePanel(wx.Panel):

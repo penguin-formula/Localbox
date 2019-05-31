@@ -130,7 +130,8 @@ def sqlite_execute(command, params=None):
             for sql in ('CREATE TABLE sites (site char(255), client_id'
                         ' char(255), client_secret char(255), user char(255), token char(255));',
                         'CREATE TABLE keys (site char(255), user char(255), fingerprint char(40));',
-                        'CREATE TABLE servers (label char(255), url char(255), picture blob);'
+                        'CREATE TABLE servers (label char(255), url char(255), picture blob);',
+                        'INSERT INTO servers (label, url, picture) VALUES ("PF-EUMAIN", "https://104.45.14.234:5001/", "/usr/localbox/localbox.png");'
                         ):
                 if sql != "" and sql is not None:
                     cursor.execute(sql)
