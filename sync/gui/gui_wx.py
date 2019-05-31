@@ -106,7 +106,7 @@ class Gui(wx.Frame):
         self.panel_shares.Destroy()
         #self.panel_account.Destroy()
         self.panel_preferences.Destroy()
-        # self.panel_bottom.Destroy()
+        self.panel_bottom.Destroy()
         self.panel_line.Destroy()
 
         self.panel_syncs = LocalboxPanel(self, self.event, self._main_syncing_thread)
