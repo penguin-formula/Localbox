@@ -58,7 +58,7 @@ class Gui(wx.Frame):
         self.toolbar_panels = dict()
         self.panel_syncs = LocalboxPanel(self, event, main_syncing_thread)
         self.panel_shares = SharePanel(self)
-        self.panel_account = AccountPanel(self)
+        #self.panel_account = AccountPanel(self)
         self.panel_preferences = PreferencesPanel(self)
         self.panel_bottom = BottomPanel(self)
         self.panel_line = wx.Panel(self)
@@ -73,7 +73,7 @@ class Gui(wx.Frame):
         bSizer1.Add(self.panel_line, 0, wx.EXPAND, border=10)
         bSizer1.Add(self.panel_syncs, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_shares, 0, wx.EXPAND, 10)
-        bSizer1.Add(self.panel_account, 0, wx.EXPAND, 10)
+        #bSizer1.Add(self.panel_account, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_preferences, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_bottom, 0, wx.ALIGN_BOTTOM, 10)
 
@@ -104,14 +104,14 @@ class Gui(wx.Frame):
 
         self.panel_syncs.Destroy()
         self.panel_shares.Destroy()
-        self.panel_account.Destroy()
+        #self.panel_account.Destroy()
         self.panel_preferences.Destroy()
         # self.panel_bottom.Destroy()
         self.panel_line.Destroy()
 
         self.panel_syncs = LocalboxPanel(self, self.event, self._main_syncing_thread)
         self.panel_shares = SharePanel(self)
-        self.panel_account = AccountPanel(self)
+        #self.panel_account = AccountPanel(self)
         self.panel_preferences = PreferencesPanel(self)
         self.panel_bottom = BottomPanel(self)
         self.panel_line = wx.Panel(self)
@@ -124,7 +124,7 @@ class Gui(wx.Frame):
         bSizer1.Add(self.panel_line, 0, wx.EXPAND, border=10)
         bSizer1.Add(self.panel_syncs, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_shares, 0, wx.EXPAND, 10)
-        bSizer1.Add(self.panel_account, 0, wx.EXPAND, 10)
+        #bSizer1.Add(self.panel_account, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_preferences, 0, wx.EXPAND, 10)
         bSizer1.Add(self.panel_bottom, 0, wx.ALIGN_BOTTOM, 10)
 
@@ -179,7 +179,7 @@ class Gui(wx.Frame):
 
         bt_toolbar_localboxes = self._create_toolbar_label(img='sync.png', label=_('Syncs'))
         bt_toolbar_shares = self._create_toolbar_label(img='share.png', label=_('Shares'))
-        bt_toolbar_account = self._create_toolbar_label(img='user.png', label=_('User'))
+        #bt_toolbar_account = self._create_toolbar_label(img='user.png', label=_('User'))
         bt_toolbar_preferences = self._create_toolbar_label(img='preferences.png', label=_('Preferences'))
 
         self.toolbar.AddStretchableSpace()
@@ -193,18 +193,19 @@ class Gui(wx.Frame):
 
         self.toolbar_panels[bt_toolbar_localboxes.Id] = self.panel_syncs
         self.toolbar_panels[bt_toolbar_shares.Id] = self.panel_shares
-        self.toolbar_panels[bt_toolbar_account.Id] = self.panel_account
+        #self.toolbar_panels[bt_toolbar_account.Id] = self.panel_account
         self.toolbar_panels[bt_toolbar_preferences.Id] = self.panel_preferences
 
         self.Bind(wx.EVT_TOOL, self.OnToolbarLocalboxesClick, id=bt_toolbar_localboxes.Id)
         self.Bind(wx.EVT_TOOL, self.OnToolbarLocalboxesClick, id=bt_toolbar_shares.Id)
-        self.Bind(wx.EVT_TOOL, self.OnToolbarLocalboxesClick, id=bt_toolbar_account.Id)
+        #self.Bind(wx.EVT_TOOL, self.OnToolbarLocalboxesClick, id=bt_toolbar_account.Id)
         self.Bind(wx.EVT_TOOL, self.OnToolbarLocalboxesClick, id=bt_toolbar_preferences.Id)
 
     def show_first_panels(self):
         self.panel_syncs.Show()
         self.panel_shares.Hide()
-        self.panel_account.Hide()
+        
+        #self.panel_account.Hide()
         self.panel_preferences.Hide()
 
     def hide_before_login(self):
@@ -212,7 +213,7 @@ class Gui(wx.Frame):
 
         self.panel_line.Hide()
         self.panel_syncs.Hide()
-        self.panel_account.Hide()
+        #self.panel_account.Hide()
         self.panel_preferences.Hide()
 
     def on_successful_login(self):
@@ -522,6 +523,8 @@ class AccountPanel(wx.Panel):
 
         self.__set_events()
 
+        self.on_show(None)
+
     def get_share_list(self):
         share_list = wx.ListCtrl(self, size=(700, -1), style=wx.LC_REPORT | wx.BORDER_SUNKEN)
         share_list.InsertColumn(0, _("ID"), width=50)
@@ -536,7 +539,7 @@ class AccountPanel(wx.Panel):
 
             invites = self.ctrl.load_invites()
             if len(invites) > 0:
-                self.label_message.SetLabelText(_('You have {0} invitations to review.'.format(str(len(invites)))))
+                self.label_message.SetLabelText(_('You have {0} invitation(s) to review.'.format(str(len(invites)))))
                 for invite in invites:
                     index = self.invite_list.InsertItem(sys.maxint, str(invite['id']))
                     self.invite_list.SetItem(index, 1, str(invite['link_path']))
@@ -762,6 +765,7 @@ class BottomPanel(wx.Panel):
 
     def OnClickOk(self, event):
         getLogger(__name__).debug('OkOnClick')
+        ShareInvitationsDialog(self)
         # self.parent.ctrl.save()
         # self.parent.Hide()
 
@@ -1387,4 +1391,30 @@ class ShareAddUserDialog(wx.Dialog):
 
     def OnClickClose(self, wx_event):
         self.parent.on_populate()
+        self.Destroy()
+
+
+class ShareInvitationsDialog(wx.Dialog):
+    def __init__(self, parent):
+        super(ShareInvitationsDialog, self).__init__(parent=parent,
+                                            title=_('Invitations'),
+                                            size=(500, 300),
+                                            style=wx.CLOSE_BOX | wx.CAPTION)
+
+        # Attributes
+        self.panel = AccountPanel(self)
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.InitUI()
+
+        self.Bind(wx.EVT_CLOSE, self.OnClickClose)
+
+    def InitUI(self):
+        self.main_sizer.Add(self.panel)
+
+        self.Layout()
+        self.Center()
+        self.Show()
+
+    def OnClickClose(self, wx_event):
         self.Destroy()
