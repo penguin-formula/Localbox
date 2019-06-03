@@ -79,7 +79,7 @@ class LoginWizardPage(WizardPageSimple):
 
         # Server logo
 
-        image = wx.Image('/usr/localbox/localbox.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        image = wx.Image(gui_utils.iconpath(png=True), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
         self.imageBitmap = wx.StaticBitmap(self, wx.ID_ANY, image)
         input_sizer.Add(self.imageBitmap, 0, wx.ALL | wx.CENTER)
         input_sizer.Add(wx.StaticText(self, label=_("Server")), 0, wx.ALL | wx.CENTER)   
@@ -274,7 +274,7 @@ class NewSyncInputsWizardPage(WizardPageSimple):
         self.parent = parent
         self._sizer = wx.BoxSizer(wx.VERTICAL)
 
-        image = wx.Image('/usr/localbox/localbox.png', wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        image = wx.Image(gui_utils.iconpath(png=True), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
         self.imageBitmap = wx.StaticBitmap(self, wx.ID_ANY, image)
         self._sizer.Add(self.imageBitmap, 0, wx.ALL | wx.CENTER)
         self.server_label = wx.StaticText(self, label=_("Server"))

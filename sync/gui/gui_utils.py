@@ -18,15 +18,17 @@ PASSPHRASE_TITLE = 'YourLocalBox %s - Enter Passphrase' % VERSION_STRING
 DEFAULT_BORDER = 10
 
 
-def iconpath():
+def iconpath(png=False):
     """
     returns the path for the icon related to this widget
     """
-    ico_path = join(sys_prefix, 'localbox', 'localbox.ico')
+    filename = 'localbox.png' if png else 'localbox.ico'
+
+    ico_path = join(sys_prefix, 'localbox', filename)
     if exists(ico_path):
         return ico_path
     else:
-        return join('data', 'icon', 'localbox.ico')
+        return join('data', 'icon', filename)
 
 
 def images_path(image_name):
@@ -115,7 +117,7 @@ class AddServerDialog(wx.Dialog):
         self.lblurl = wx.StaticText(self.panel, label="Url", pos=(20,60))
         self.server_url = wx.TextCtrl(self.panel, value="https://localhost:5000/", pos=(110,60), size=(300,-1))
         self.lblpicture = wx.StaticText(self.panel, label="Picture", pos=(20,100))
-        self.server_picture = wx.TextCtrl(self.panel, value="/usr/localbox/localbox.png", pos=(110,100), size=(300,-1))
+        self.server_picture = wx.TextCtrl(self.panel, value="", pos=(110,100), size=(300,-1))
 
         self.saveButton =wx.Button(self.panel, label="Save", pos=(250,150))
         self.closeButton =wx.Button(self.panel, label="Cancel", pos=(350,150))
