@@ -137,6 +137,7 @@ class LocalBox(object):
             if hasattr(error, 'code'):
                 if error.code == 401:
                     if retry_count <= defaults.MAX_AUTH_RETRIES:
+                        # getLogger(__name__).info('Error authenticating client, retry number %s: request %s' % (retry_count, request))
                         self.authenticator.authenticate_with_client_secret()
                         return self._make_call(request, retry_count + 1)
             raise error

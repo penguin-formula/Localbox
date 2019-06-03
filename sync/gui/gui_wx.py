@@ -291,12 +291,12 @@ class LocalboxPanel(LoxPanel):
         # Make widgets
         self.btn_sync = wx.Button(self, label=_('Sync'), size=(100, 30))
         self.btn_rem = wx.Button(self, label=_('Clean'), size=(100, 30))
-        self.btn_ping = wx.Button(self, label=_('Refresh'), size=(100, 30))
+        # self.btn_ping = wx.Button(self, label=_('Refresh'), size=(100, 30))
 
         # Bind events
         self.Bind(wx.EVT_BUTTON, self.on_btn_sync, self.btn_sync)
         self.Bind(wx.EVT_BUTTON, self.on_btn_rem, self.btn_rem)
-        self.Bind(wx.EVT_BUTTON, self.on_btn_ping, self.btn_ping)
+        # self.Bind(wx.EVT_BUTTON, self.on_btn_ping, self.btn_ping)
         self.Bind(wx.EVT_LIST_DELETE_ITEM, self._on_list_delete_item)
         self.Bind(wx.EVT_LIST_INSERT_ITEM, self._on_list_insert_item)
         self.Bind(wx.EVT_SHOW, self.on_show)
@@ -321,7 +321,7 @@ class LocalboxPanel(LoxPanel):
         hbox4 = wx.BoxSizer(wx.HORIZONTAL)
         hbox4.Add(self.btn_sync, 0, wx.EXPAND)
         hbox4.Add(self.btn_rem, 0, wx.EXPAND)
-        hbox4.Add(self.btn_ping, 0, wx.EXPAND)
+        # hbox4.Add(self.btn_ping, 0, wx.EXPAND)
         hbox4.Add((0, 0), 1, wx.EXPAND)
         hbox4.Add(self.btn_add, 0, wx.EXPAND)
         hbox4.Add(self.btn_del, 0, wx.EXPAND)
@@ -743,15 +743,15 @@ class BottomPanel(wx.Panel):
     def _DoLayout(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add((0,5))
-        main_sizer.Add(wx.StaticLine(self, -1), 0, wx.ALL | wx.EXPAND, border=1)
-        main_sizer.Add(self.get_user_message(), 0, wx.ALL | wx.EXPAND, border=1)
+        main_sizer.Add(wx.StaticLine(self, -1), 0, wx.ALL | wx.EXPAND, border=0)
+        main_sizer.Add(self.get_user_message(), 0, wx.ALL, border=5)
         self.SetSizer(main_sizer)
 
     def get_user_message(self):
         invites = self.ctrl.load_invites()
         if len(invites) > 0:
-            label = _('You have {0} invitation(s) to review.'.format(str(len(invites))))
-            self.hyperlink = hl.HyperLinkCtrl(self, -1, label=label, pos=(100, 100), URL="#")
+            label = _('You have {0} invitation(s) to review'.format(str(len(invites))))
+            self.hyperlink = hl.HyperLinkCtrl(self, 0, label=label, pos=(10, 10), URL="")
             self.hyperlink.AutoBrowse(False)
             self.hyperlink.Bind(hl.EVT_HYPERLINK_LEFT, self.OnClickOk)
             return self.hyperlink
@@ -1404,6 +1404,7 @@ class ShareInvitationsDialog(wx.Dialog):
         # Attributes
         self.panel = AccountPanel(self)
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.parent = parent
 
         self.InitUI()
 
@@ -1413,7 +1414,7 @@ class ShareInvitationsDialog(wx.Dialog):
         self.main_sizer.Add(self.panel)
 
         self.Layout()
-        self.Center()
+        #self.Center()
         self.Show()
 
     def OnClickClose(self, wx_event):

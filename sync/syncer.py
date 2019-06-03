@@ -271,6 +271,8 @@ class Syncer(object):
                 getLogger(__name__).exception("Problem '%s' with file %s; continuing", error, metavfs.path)
         self.populate_filepath_metadata(path='./', parent=None)
         self.filepath_metadata.save(OLD_SYNC_STATUS + self.name)
+        #Update workspace after sync
+        self.do_heartbeat()
 
     def do_heartbeat(self, force_gui_notif=False):
         if self.localbox.do_heartbeat():

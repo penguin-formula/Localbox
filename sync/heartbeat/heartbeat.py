@@ -9,7 +9,7 @@ from sync.notif.notifs import Notifs
 from sync.notif import notifs_util
 
 
-heartbeat_period = 60 * 10 # Every ten minutes
+heartbeat_period = 60 * 1 # Every minute
 
 
 class Heartbeat(Thread):
