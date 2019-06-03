@@ -107,7 +107,7 @@ class SyncsController(object):
 
 
 class SyncItem:
-    def __init__(self, label=None, url=None, status=None, path=None, direction=None, user=None, shares=None):
+    def __init__(self, label=None, url=None, status=None, path=None, direction=None, user=None, shares=None, server=None):
         self._label = label
         self._url = url
         self._status = status if status is not None else "Initializing"
@@ -115,6 +115,7 @@ class SyncItem:
         self._direction = direction
         self._user = user
         self._shares = shares if shares is not None else []
+        self._server = server
 
     @property
     def label(self):
@@ -167,6 +168,14 @@ class SyncItem:
     @user.setter
     def user(self, value):
         self._user = value
+
+    @property
+    def server(self):
+        return self._server
+
+    @server.setter
+    def server(self, value):
+        self._server = value
 
     def __str__(self):
         return json.dumps(self.__dict__)

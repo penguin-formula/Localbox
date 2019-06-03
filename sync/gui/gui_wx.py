@@ -1130,7 +1130,7 @@ class LocalboxListCtrl(wx.ListCtrl):
         self.InsertColumn(0, _("Label"))
         self.InsertColumn(1, _("Path"))
         self.InsertColumn(2, _("Status"))
-        self.InsertColumn(3, _("URL"))
+        self.InsertColumn(3, _("Server"))
 
         self.SetColumnWidth(0, 100)
         self.SetColumnWidth(1, 250)
@@ -1142,7 +1142,7 @@ class LocalboxListCtrl(wx.ListCtrl):
         Read the syncs list from the controller
         """
         for item in self.ctrl.load():
-            self.Append((item.label, item.path, item.status, item.url))
+            self.Append((item.label, item.path, item.status, item.server))
 
     def selected(self):
         idx = 0
@@ -1158,7 +1158,7 @@ class LocalboxListCtrl(wx.ListCtrl):
 
     def add(self, item):
         getLogger(__name__).debug('%s: Add item %s' % (self.__class__.__name__, item))
-        self.Append((item.label, item.path, item.status, item.url))
+        self.Append((item.label, item.path, item.status, item.server))
         self.ctrl.add(item)
 
     def delete(self):
@@ -1253,7 +1253,7 @@ class SharesListCtrl(LoxListCtrl):
         self.InsertColumn(0, _("Label"))
         self.InsertColumn(1, _("Owner"))
         self.InsertColumn(2, _("Path"))
-        self.InsertColumn(3, _("URL"))
+        self.InsertColumn(3, _("Server"))
 
         self.SetColumnWidth(0, 150)
         self.SetColumnWidth(1, 150)

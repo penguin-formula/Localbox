@@ -482,7 +482,8 @@ class PassphraseWizardPage(WizardPageSimple):
                         label=self.parent.box_label,
                         direction='sync',
                         path=self.parent.path,
-                        user=self.parent.localbox_client.authenticator.username)
+                        user=self.parent.localbox_client.authenticator.username,
+                        server=self.parent.selected_server.label)
         self.parent.ctrl.add(item)
         self.parent.ctrl.save()
         self.parent.event.set()
