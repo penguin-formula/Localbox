@@ -1,8 +1,14 @@
 import os
-from ConfigParser import NoOptionError
 from logging import getLogger
 from os.path import isfile, exists
-from urllib2 import URLError
+
+try:
+    from ConfigParser import NoOptionError
+    from urllib2 import URLError
+except ImportError:
+    from urllib.error import URLError
+    from configparser import NoOptionError
+
 
 from watchdog.events import LoggingEventHandler
 from watchdog.observers import Observer

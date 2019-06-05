@@ -199,10 +199,12 @@ class LocalBoxIcon(TaskBarIcon):
     def OnNewGuiNotifs(self, event):
         msg = event.getMsg()
         wxNotif(msg["title"], msg["message"]).Show()
+        self.frame.loading_gif.Stop()
 
     def on_new_gui_heartbeat(self, event):
         msg = event.getMsg()
         self.frame.on_new_gui_heartbeat(msg)
+        self.frame.loading_gif.Stop()
 
     def on_new_openfile_ctrl(self, event):
         self.frame.on_new_openfile_ctrl()
@@ -226,5 +228,4 @@ def taskbarmain(main_syncing_thread, sites=None, observers=None):
 
         app.MainLoop()
     except SystemExit:
-        print "Exiting"
         os._exit(0)

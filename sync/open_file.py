@@ -34,7 +34,7 @@ def open_file(data_dic):
             passphrase)
 
     # If there was a failure, answer wit ha 404 to state that the file doesn't exist
-    except Exception, e:
+    except Exception as e:
         gui_utils.show_error_dialog(_('Failed to decode contents. aborting : {}').format(e), 'Error', standalone=True)
         getLogger(__name__).info('failed to decode contents. aborting : {}'.format(e))
 

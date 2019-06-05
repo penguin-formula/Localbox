@@ -1,7 +1,10 @@
 import pickle
 
 from logging import getLogger
-from urllib2 import URLError
+try:
+    from urllib2 import URLError
+except ImportError:
+    from urllib.error import URLError
 
 from sync.controllers.localbox_ctrl import SyncsController
 from sync.defaults import LOCALBOX_ACCOUNT_PATH

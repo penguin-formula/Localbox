@@ -140,6 +140,7 @@ class Gui(wx.Frame):
         self.SetAutoLayout(True)
         self.SetSizer(bSizer1)
         self.Layout()
+        self.loading_gif.Stop()
 
         self.Show(True)
 
@@ -155,7 +156,6 @@ class Gui(wx.Frame):
     def on_close(self, event):
         self.Hide()
         #event.Veto(True)
-        print "Closing now", self._main_syncing_thread
         os._exit(0)
 
     def _create_toolbar_label(self, label, img):
@@ -177,9 +177,14 @@ class Gui(wx.Frame):
 
         self.toolbar.AddStretchableSpace()
 
+        # self.gif = wx.adv.AnimationCtrl(parent=self.toolbar, name="User")
+        # self.gif.LoadFile("/home/micael/Desktop/loading_small.gif")
+        # test = self.toolbar.CreateTool(self.gif, label="Test")
+        # bt_toolbar_account = self.toolbar.AddTool(test)
+        # self.gif.Play()
+
         bt_toolbar_localboxes = self._create_toolbar_label(img='sync.png', label=_('Syncs'))
         bt_toolbar_shares = self._create_toolbar_label(img='share.png', label=_('Shares'))
-        #bt_toolbar_account = self._create_toolbar_label(img='user.png', label=_('User'))
         bt_toolbar_preferences = self._create_toolbar_label(img='preferences.png', label=_('Preferences'))
 
         self.toolbar.AddStretchableSpace()
@@ -245,7 +250,11 @@ class Gui(wx.Frame):
         self.Layout()
 
     def on_new_gui_heartbeat(self, msg):
+        # print "New heartbeat"
         self.panel_syncs.on_new_gui_heartbeat(msg)
+        self.loading_gif.Stop()
+        # time.sleep(1)
+        # self.loading_gif.Stop()       
 
     def on_new_openfile_ctrl(self):
         self.panel_syncs.on_new_openfile_ctrl()
@@ -286,6 +295,7 @@ class LocalboxPanel(LoxPanel):
         # Attributes
         self._main_syncing_thread = main_syncing_thread
         self.event = event
+        self.parent = parent
         self.ctrl = LocalboxListCtrl(self)
 
         # Make widgets
@@ -336,6 +346,7 @@ class LocalboxPanel(LoxPanel):
         self.refresh()
 
     def on_btn_sync(self, wx_event):
+        self.parent.loading_gif.Play()
         labels_to_sync = self.ctrl.selected()
         self._main_syncing_thread.sync(labels_to_sync)
 
@@ -399,6 +410,7 @@ class SharePanel(LoxPanel):
         # Attributes
         self.ctrl = SharesListCtrl(self)
         self.ctrl_lox = SyncsController()
+        self.parent = parent
 
         # Make widgets
         self.btn_refresh = wx.Button(self, label=_('Refresh'), size=(100, 30))
@@ -492,6 +504,7 @@ class SharePanel(LoxPanel):
         self.btn_edit.Enable(self.ctrl.SelectedItemCount == 1 and owner == user)
 
     def sync(self):
+        self.parent.loading_gif.Play()
         self.btn_refresh.Disable()
         worker = PopulateThread(self, self.ctrl.load)
         worker.start()
@@ -744,7 +757,21 @@ class BottomPanel(wx.Panel):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add((0,5))
         main_sizer.Add(wx.StaticLine(self, -1), 0, wx.ALL | wx.EXPAND, border=0)
-        main_sizer.Add(self.get_user_message(), 0, wx.ALL, border=5)
+
+        hbox4 = wx.BoxSizer(wx.HORIZONTAL)
+
+        hbox4.Add(self.get_user_message(), 0, wx.ALL, border=5)
+        hbox4.Add((0, 0), 1, wx.EXPAND)
+
+        self.parent.loading_gif = wx.adv.AnimationCtrl(self, name="User")
+        self.parent.loading_gif.LoadFile(gui_utils.images_path("loading_small.gif"))
+        self.parent.loading_gif.Play()
+
+        hbox4.Add(self.parent.loading_gif, 0, wx.EXPAND | wx.ALIGN_RIGHT, border=0 )
+
+        main_sizer.Add(hbox4, flag=wx.ALIGN_CENTER | wx.CENTER | wx.EXPAND | wx.EAST | wx.WEST, border=10)
+
+
         self.SetSizer(main_sizer)
 
     def get_user_message(self):
