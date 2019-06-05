@@ -183,7 +183,7 @@ class Gui(wx.Frame):
         # bt_toolbar_account = self.toolbar.AddTool(test)
         # self.gif.Play()
 
-        bt_toolbar_localboxes = self._create_toolbar_label(img='sync.png', label=_('Syncs'))
+        bt_toolbar_localboxes = self._create_toolbar_label(img='folder.png', label=_('Folders'))
         bt_toolbar_shares = self._create_toolbar_label(img='share.png', label=_('Shares'))
         bt_toolbar_preferences = self._create_toolbar_label(img='preferences.png', label=_('Preferences'))
 
