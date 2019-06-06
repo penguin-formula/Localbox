@@ -197,14 +197,14 @@ class LocalBoxIcon(TaskBarIcon):
         # menu.Destroy()
 
     def OnNewGuiNotifs(self, event):
+        getLogger(__name__).debug("New GUI notif taskbar.py")
         msg = event.getMsg()
         wxNotif(msg["title"], msg["message"]).Show()
-        self.frame.loading_gif.Stop()
 
     def on_new_gui_heartbeat(self, event):
+        getLogger(__name__).debug("New GUI hearbeat taskbar.py")
         msg = event.getMsg()
         self.frame.on_new_gui_heartbeat(msg)
-        self.frame.loading_gif.Stop()
 
     def on_new_openfile_ctrl(self, event):
         self.frame.on_new_openfile_ctrl()

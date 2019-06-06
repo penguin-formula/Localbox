@@ -53,7 +53,7 @@ data_files = [
     ('localbox', ['data/icon/localbox.ico',
                   'data/icon/localbox.png',
                   'data/x-localbox.xml']),
-    ('localbox/images', glob.glob('data/images/*.png'))
+    ('localbox/images', glob.glob('data/images/*.*'))
 ]
 
 if system() == 'Linux':

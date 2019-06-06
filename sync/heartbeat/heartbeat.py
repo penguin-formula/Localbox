@@ -1,6 +1,7 @@
 import time
 import json
 from threading import Thread
+from logging import getLogger
 
 import zmq
 
@@ -80,9 +81,11 @@ class Heartbeat(Thread):
                 self.fullHeartbeat()
 
     def labelHeartbeat(self, label, force_gui_notif=False):
+        getLogger(__name__).debug("Label hearbeat", label)
         self.main_syncing_thread.do_heartbeat([label], force_gui_notif)
 
     def fullHeartbeat(self, force_gui_notif=False):
+        getLogger(__name__).debug("Full hearbeat")
         self.main_syncing_thread.do_heartbeat(force_gui_notif=force_gui_notif)
         self.last_full_heartbeat = time.time()
 

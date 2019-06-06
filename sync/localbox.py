@@ -538,6 +538,7 @@ class LocalBox(object):
         return result
 
     def do_heartbeat(self):
+        getLogger(__name__).debug("Do heartbeat localbox.py")
         """
         The sync will perform a heartbeat operation by requesting the heartbeat
         route from the backend
@@ -556,6 +557,7 @@ class LocalBox(object):
         except HTTPError as error:
             result = False
 
+        self.remove_decrypted_files()
         return result
 
     def decode_file(self, path, filename, passphrase):
@@ -616,6 +618,9 @@ class LocalBox(object):
 
         # TODO: use timed cache (see cachetools.TTLCache: https://pythonhosted.org/cachetools/)
         return AES_Key(key, MODE_CFB, iv, segment_size=128) if key else None
+
+    def remove_decrypted_files(self):
+        remove_decrypted_files()
 
 
 def get_localbox_path(localbox_location, filesystem_path):

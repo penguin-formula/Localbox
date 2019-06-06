@@ -275,6 +275,7 @@ class Syncer(object):
         self.do_heartbeat()
 
     def do_heartbeat(self, force_gui_notif=False):
+        getLogger(__name__).debug("Do heartbeat syncer.py")
         if self.localbox.do_heartbeat():
             self.online = True
             Notifs().syncHeartbeatUp(self.name, force_gui_notif)

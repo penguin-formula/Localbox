@@ -250,11 +250,9 @@ class Gui(wx.Frame):
         self.Layout()
 
     def on_new_gui_heartbeat(self, msg):
-        # print "New heartbeat"
+        getLogger(__name__).debug("New heartbeat received")
         self.panel_syncs.on_new_gui_heartbeat(msg)
         self.loading_gif.Stop()
-        # time.sleep(1)
-        # self.loading_gif.Stop()       
 
     def on_new_openfile_ctrl(self):
         self.panel_syncs.on_new_openfile_ctrl()
