@@ -455,8 +455,7 @@ class SharePanel(LoxPanel):
         self.SetSizer(vbox)
 
     def on_btn_refresh(self, wx_event):
-        return #Disable for now
-        #self.sync()
+        self.sync()
 
     def on_btn_add(self, wx_event):
         NewShareDialog(self, self.ctrl)
@@ -507,7 +506,7 @@ class SharePanel(LoxPanel):
         worker = PopulateThread(self, self.ctrl.load)
         worker.start()
 
-        #self.btn_refresh.Enable(len(self.ctrl_lox) > 0)
+        self.btn_refresh.Enable(len(self.ctrl_lox) > 0)
         self.btn_add.Enable(len(self.ctrl_lox) > 0)
 
 
@@ -803,7 +802,8 @@ class NewSharePanel(wx.Panel):
         self.parent = parent
 
         self.users = None
-        self.list = wx.CheckListBox(self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize)
+        # self.list = wx.CheckListBox(self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize)
+        self.list = wx.TextCtrl(self)
         self._selected_dir = wx.TextCtrl(self, style=wx.TE_READONLY)
         self.btn_select_dir = wx.Button(self, label=_('Select'), size=(95, 30))
         self.btn_select_dir.Disable()
@@ -825,7 +825,7 @@ class NewSharePanel(wx.Panel):
         sizer.Add(sizer_sel_dir, 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
         sizer.Add(wx.StaticText(self, label=_('Choose the users you want to share with:')), 0, wx.ALL | wx.EXPAND,
                   border=DEFAULT_BORDER)
-        sizer.Add(self.list, proportion=1, flag=wx.EXPAND | wx.ALL, border=DEFAULT_BORDER)
+        sizer.Add(self.list, 0, wx.ALL | wx.EXPAND, border=DEFAULT_BORDER)
 
         btn_szr = wx.StdDialogButtonSizer()
 
@@ -853,14 +853,21 @@ class NewSharePanel(wx.Panel):
         path = self._selected_dir.GetValue()
         lox_label = self.choice.GetString(self.choice.GetSelection())
 
-        user_list = filter(lambda x: x['username'] in self.list.CheckedStrings, self.users)
-        if gui_utils.is_valid_input(path) and len(user_list) > 0:
+        user_list = map(lambda x: x['username'], self.users)
+        user_input = self.list.GetValue()
+
+
+        if user_input not in user_list:
+            gui_utils.show_error_dialog(
+                _('User not found in the system'), _('Warning'))
+
+        elif gui_utils.is_valid_input(path):
             share_path = path.replace(self.localbox_path, '', 1)
 
             if self.localbox_client.create_share(localbox_path=share_path,
                                                  user_list=user_list):
                 ShareItem(user=self.localbox_client.username, path=share_path, url=self.localbox_client.url,
-                          label=lox_label)
+                          label=lox_label, server=self.localbox_client.label)
                 SharesController().load()  # force load to get the ids from the server
                 self.parent.ctrl.populate(SharesController().get_list())
             else:
@@ -898,8 +905,7 @@ class NewSharePanel(wx.Panel):
 
     def on_populate(self, wx_event):
         self.users = wx_event.get_value()
-        map(lambda x: self.list.Append(x['username']),
-            filter(lambda u: u['username'] != self.localbox_client.username, self.users))
+        self.users = filter(lambda u: u['username'] != self.localbox_client.username, self.users)
 
     @property
     def localbox_client(self):
@@ -1019,7 +1025,7 @@ class ShareAddUserPanel(wx.Panel):
 
         # Layout
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(wx.StaticText(self, label=_('Choose users to add to the share:')), 0, wx.ALL | wx.EXPAND,
+        sizer.Add(wx.StaticText(self, label=_('Type user to add to the share:')), 0, wx.ALL | wx.EXPAND,
                   border=DEFAULT_BORDER)
         sizer.Add(self.list, proportion=1, flag=wx.EXPAND | wx.ALL, border=DEFAULT_BORDER)
 
@@ -1287,7 +1293,7 @@ class SharesListCtrl(LoxListCtrl):
 
     def populate(self, lst=None):
         super(SharesListCtrl, self).populate(lst)
-        map(lambda i: self.Append([i.label, i.user, i.path, i.url]), lst)
+        map(lambda i: self.Append([i.label, i.user, i.path, i.server]), lst)
 
 
 # ----------------------------------- #
@@ -1342,7 +1348,7 @@ class NewShareDialog(wx.Dialog):
     def __init__(self, parent, ctrl):
         super(NewShareDialog, self).__init__(parent=parent,
                                              title=_('Create Share'),
-                                             size=(500, 600),
+                                             size=(500, 400),
                                              style=wx.CLOSE_BOX | wx.CAPTION)
 
         self.ctrl = ctrl

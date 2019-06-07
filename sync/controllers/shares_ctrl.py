@@ -65,7 +65,8 @@ class SharesController(object):
                                            path='/' + share['path'],
                                            url=item.url,
                                            label=item.label,
-                                           id=share['id'])
+                                           id=share['id'],
+                                           server='Local')
                     self._list.append(share_item)
             except URLError:
                 getLogger(__name__).exception('failed to get_share_list (%s, %s)' % (item.url, item.label))
@@ -83,7 +84,8 @@ class SharesController(object):
                                            path='/' + share['link_path'],
                                            url=item.url,
                                            label=item.label,
-                                           id=share['id'])
+                                           id=share['id'],
+                                           server='Local')
                     self._list.append(share_item)
             except URLError:
                 getLogger(__name__).exception('failed to get_share_list (%s, %s)' % (item.url, item.label))
@@ -137,12 +139,13 @@ class SharesController(object):
 
 
 class ShareItem(object):
-    def __init__(self, user=None, path=None, url=None, label=None, id=None):
+    def __init__(self, user=None, path=None, url=None, label=None, id=None, server=None):
         self.user = user
         self.path = path
         self.url = url
         self.label = label
         self.id = id
+        self.server = server
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
