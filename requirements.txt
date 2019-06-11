@@ -2,7 +2,7 @@ pycrypto
 python-gnupg
 six
 wheel
-wxPython
+wxPython>=4.0.4
 watchdog
 psutil
 pyzmq

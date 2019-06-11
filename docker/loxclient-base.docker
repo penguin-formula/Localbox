@@ -15,7 +15,7 @@ RUN apt update --fix-missing && \
         build-essential \
         python2.7-dev \
         python2.7-examples \
-        python-wxgtk3.0 \
+        python-wxgtk4.0 \
         libwebkitgtk-dev \
         libjpeg-dev \
         libtiff-dev \
