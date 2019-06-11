@@ -50,7 +50,7 @@ installer: exe
 exe: #sync/version.py
 	#wine python.exe setup.py bdist_wininst
 	python setup.py bdist_wininst
-	cp dist/LocalBoxSync-*.win32.exe .
+	cp dist/LocalBoxSync-*.exe .
 
 translatefile:
 	pygettext -o localboxsync.pot -k lgettext -k translate sync

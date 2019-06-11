@@ -1165,7 +1165,7 @@ class LocalboxListCtrl(wx.ListCtrl):
         self.SetColumnWidth(0, 100)
         self.SetColumnWidth(1, 250)
         self.SetColumnWidth(2, 100)
-        self.SetColumnWidth(3, 200)
+        self.SetColumnWidth(3, 100)
 
     def populate_list(self):
         """
