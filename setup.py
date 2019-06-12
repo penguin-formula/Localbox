@@ -64,13 +64,16 @@ if system() == 'Windows' or system().startswith('CYGWIN'):
 
 from sync.__version__ import VERSION_STRING
 
+with open('requirements.txt') as f:
+    required = f.read().splitlines()
+
 setup(
     name="LocalBoxSync",
     version=VERSION_STRING,
     description='Desktop Client for the LocalBox',
     packages=find_packages(),
     # py_modules=['gnupg'],
-    setup_requires=['wheel'],
+    install_requires=required,
     data_files=data_files,
     include_package_data=True,
     author="De Staat der Nederlanden",

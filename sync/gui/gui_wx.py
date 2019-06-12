@@ -760,13 +760,13 @@ class BottomPanel(wx.Panel):
         hbox4.Add(self.get_user_message(), 0, wx.ALL, border=10)
         hbox4.Add((0, 0), 1, wx.EXPAND)
 
-        self.parent.loading_gif = wx.adv.AnimationCtrl(self, name="User")
+        self.parent.loading_gif = wx.adv.AnimationCtrl(self)
         self.parent.loading_gif.LoadFile(gui_utils.images_path("loading_small.gif"))
         self.parent.loading_gif.Play()
 
         hbox4.Add(self.parent.loading_gif, 0, wx.EXPAND | wx.ALIGN_RIGHT, border=5 )
 
-        main_sizer.Add(hbox4, flag=wx.ALIGN_CENTER | wx.CENTER | wx.EXPAND | wx.EAST | wx.WEST, border=10)
+        main_sizer.Add(hbox4, flag=wx.ALIGN_CENTER | wx.CENTER | wx.EXPAND | wx.EAST | wx.WEST, border=0)
 
         self.SetSizer(main_sizer)
 
