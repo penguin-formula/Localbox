@@ -274,7 +274,7 @@ class NewSyncInputsWizardPage(WizardPageSimple):
         self.parent = parent
         self._sizer = wx.BoxSizer(wx.VERTICAL)
 
-        image = wx.Image(gui_utils.iconpath(png=True), wx.BITMAP_TYPE_PNG).Scale(100,100).ConvertToBitmap()
+        image = wx.Image(gui_utils.images_path('penguin.png'), wx.BITMAP_TYPE_PNG).Scale(100,100).ConvertToBitmap()
         self.imageBitmap = wx.StaticBitmap(self, wx.ID_ANY, image)
         self._sizer.Add(self.imageBitmap, 0, wx.ALL | wx.CENTER)
         self.server_label = wx.StaticText(self, label=_("Server"))
