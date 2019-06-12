@@ -225,12 +225,6 @@ class Server:
 
 
 def get_server_list():
-    # server1 =  Server(label='PF-EUMAIN', picture='data/icon/localbox.png', url='https://104.45.14.234:5001/')
-    # server2 =  Server(label='LOCALHOST', picture='data/images/share.png', url='https://localhost:5001/')
-    # server3 =  Server(label='PF-EUWEST03', picture='data/images/preferences.png', url='https://104.45.14.234:5001/')
-    # server4 =  Server(label='PF-EUWEST04', picture='data/images/sync.png', url='https://104.45.14.234:5001/')
-    # server5 =  Server(label='PF-EUWEST05', picture='data/images/user.png', url='https://104.45.14.234:5001/')
-
     return [ Server(label=item[0], url=item[1], picture=item[2]) for item in label_model.get_server_data() ]
 
 def get_localbox_list():

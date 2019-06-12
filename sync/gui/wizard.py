@@ -79,8 +79,8 @@ class LoginWizardPage(WizardPageSimple):
 
         # Server logo
 
-        image = wx.Image(gui_utils.iconpath(png=True), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
-        self.imageBitmap = wx.StaticBitmap(self, wx.ID_ANY, image)
+        image = wx.Image(gui_utils.images_path('penguin.png'), wx.BITMAP_TYPE_PNG).Scale(100,100).ConvertToBitmap()
+        self.imageBitmap = wx.StaticBitmap(self, wx.ID_ANY, image, size=(100,100))
         input_sizer.Add(self.imageBitmap, 0, wx.ALL | wx.CENTER)
         input_sizer.Add(wx.StaticText(self, label=_("Server")), 0, wx.ALL | wx.CENTER)   
 

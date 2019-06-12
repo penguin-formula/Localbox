@@ -29,6 +29,7 @@ except ImportError:
 
 from sqlite3 import Error as SQLiteError
 from sqlite3 import connect as sqlite_connect
+from sync.gui import gui_utils
 
 WARNINGS_ENABLED = False
 
@@ -126,12 +127,13 @@ def sqlite_execute(command, params=None):
         connection = sqlite_connect(filename)
         connection.text_factory = Binary
         cursor = connection.cursor()
+        logo_path = gui_utils.images_path("penguin.png")
         if init_db:
             for sql in ('CREATE TABLE sites (site char(255), client_id'
                         ' char(255), client_secret char(255), user char(255), token char(255));',
                         'CREATE TABLE keys (site char(255), user char(255), fingerprint char(40));',
                         'CREATE TABLE servers (label char(255), url char(255), picture blob);',
-                        'INSERT INTO servers (label, url, picture) VALUES ("PF-EUMAIN", "https://104.45.14.234:5001/", "/usr/localbox/localbox.png");'
+                        'INSERT INTO servers (label, url, picture) VALUES ("PF-EUMAIN", "https://104.45.14.234:5001/", "{}");'.format(logo_path)
                         ):
                 if sql != "" and sql is not None:
                     cursor.execute(sql)
