@@ -1163,7 +1163,7 @@ class LocalboxListCtrl(wx.ListCtrl):
         self.InsertColumn(3, _("Server"))
 
         self.SetColumnWidth(0, 100)
-        self.SetColumnWidth(1, 250)
+        self.SetColumnWidth(1, 330)
         self.SetColumnWidth(2, 100)
         self.SetColumnWidth(3, 100)
 
