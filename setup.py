@@ -70,6 +70,7 @@ setup(
     description='Desktop Client for the LocalBox',
     packages=find_packages(),
     # py_modules=['gnupg'],
+    setup_requires=['wheel'],
     data_files=data_files,
     include_package_data=True,
     author="De Staat der Nederlanden",
