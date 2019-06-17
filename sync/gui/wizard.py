@@ -78,8 +78,8 @@ class LoginWizardPage(WizardPageSimple):
         input_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Server logo
-
-        image = wx.Image(gui_utils.images_path('penguin.png'), wx.BITMAP_TYPE_PNG).Scale(100,100).ConvertToBitmap()
+        selected_server = self.getSelectedServer()
+        image = gui_utils.image_from_url(selected_server.picture if selected_server else None).Scale(100,100).ConvertToBitmap()
         self.imageBitmap = wx.StaticBitmap(self, wx.ID_ANY, image, size=(100,100))
         input_sizer.Add(self.imageBitmap, 0, wx.ALL | wx.CENTER)
         input_sizer.Add(wx.StaticText(self, label=_("Server")), 0, wx.ALL | wx.CENTER)   
@@ -212,7 +212,7 @@ class LoginWizardPage(WizardPageSimple):
     def OnChoice(self, event): 
         getLogger(__name__).debug("New choice selected... %s ", self.server_choices.GetSelection())
         self.parent.selected_server = self.getSelectedServer(self.server_choices.GetSelection())
-        image = wx.Image(self.parent.selected_server .picture, wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        image = gui_utils.image_from_url(self.parent.selected_server.picture).Scale(100,100).ConvertToBitmap()
         self.imageBitmap.SetBitmap(image)
         self.imageBitmap.Refresh()
         self.check_server_connection(self.parent.selected_server)
@@ -274,7 +274,7 @@ class NewSyncInputsWizardPage(WizardPageSimple):
         self.parent = parent
         self._sizer = wx.BoxSizer(wx.VERTICAL)
 
-        image = wx.Image(gui_utils.images_path('penguin.png'), wx.BITMAP_TYPE_PNG).Scale(100,100).ConvertToBitmap()
+        image = gui_utils.image_from_url(None).Scale(100,100).ConvertToBitmap()
         self.imageBitmap = wx.StaticBitmap(self, wx.ID_ANY, image)
         self._sizer.Add(self.imageBitmap, 0, wx.ALL | wx.CENTER)
         self.server_label = wx.StaticText(self, label=_("Server"))
@@ -311,7 +311,7 @@ class NewSyncInputsWizardPage(WizardPageSimple):
         self.SetSizer(self._sizer)
 
     def layout(self, event):
-        image = wx.Image(self.parent.selected_server.picture, wx.BITMAP_TYPE_PNG).Scale(100,100).ConvertToBitmap()
+        image = gui_utils.image_from_url(self.parent.selected_server.picture).Scale(100,100).ConvertToBitmap()
         self.imageBitmap.SetBitmap(image)
         self.imageBitmap.Refresh()
         self.server_label.SetLabel(self.parent.selected_server.label)

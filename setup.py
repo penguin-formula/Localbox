@@ -1,7 +1,10 @@
 import sys
 import glob
+import os
 from platform import system
 from setuptools import setup, find_packages
+from setuptools.command.install import install as _install
+from pip._internal import main as pipmain
 
 try:
     from _winreg import *
@@ -67,12 +70,20 @@ from sync.__version__ import VERSION_STRING
 with open('requirements.txt') as f:
     required = f.read().splitlines()
 
+class install(_install):
+    def run(self):
+        _install.do_egg_install(self)
+        if os.name == 'posix':
+            pipmain(['install', '-f', 'https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-16.04', 'wxPython'])
+
+
 setup(
     name="LocalBoxSync",
     version=VERSION_STRING,
     description='Desktop Client for the LocalBox',
     packages=find_packages(),
     # py_modules=['gnupg'],
+    # cmdclass={'install': install},
     install_requires=required,
     data_files=data_files,
     include_package_data=True,

@@ -221,7 +221,8 @@ class Server:
         return json.dumps(self.__dict__)
 
     def save(self):
-        label_model.create_server_data(self)
+        if not label_model.get_server_data(self.label):
+            label_model.create_server_data(self)
 
 
 def get_server_list():

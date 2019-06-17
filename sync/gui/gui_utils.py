@@ -1,9 +1,10 @@
-import wx
+import wx, urllib
 import requests
 from sys import prefix as sys_prefix
 from os.path import join, exists
 from sysconfig import get_path
 from os import getcwd
+from cStringIO import StringIO
 
 from sync.__version__ import VERSION_STRING
 
@@ -41,6 +42,16 @@ def images_path(image_name):
     else:
         return join('data', 'images', image_name)
 
+
+def image_from_url(image_url):
+    """
+    returns an image object from a url
+    """
+    try:
+        data = urllib.urlopen(image_url).read()
+        return wx.ImageFromStream(StringIO(data))
+    except Exception as e:
+        return wx.Image(iconpath(True), wx.BITMAP_TYPE_PNG)
 
 def is_valid_input(value):
     return value is not None and value.strip()
@@ -109,18 +120,14 @@ def get_user_secret_input(title, message, frame=False):
 
 class AddServerDialog(wx.Dialog):
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent, wx.ID_ANY, "Add new server", size= (450,220))
+        wx.Dialog.__init__(self, parent, wx.ID_ANY, "Add new server", size= (400,130))
         self.panel = wx.Panel(self,wx.ID_ANY)
 
-        self.lbllabel = wx.StaticText(self.panel, label="Label", pos=(20,20))
-        self.server_label = wx.TextCtrl(self.panel, value="", pos=(110,20), size=(300,-1))
-        self.lblurl = wx.StaticText(self.panel, label="Url", pos=(20,60))
-        self.server_url = wx.TextCtrl(self.panel, value="https://localhost:5000/", pos=(110,60), size=(300,-1))
-        self.lblpicture = wx.StaticText(self.panel, label="Picture", pos=(20,100))
-        self.server_picture = wx.TextCtrl(self.panel, value="", pos=(110,100), size=(300,-1))
+        self.lblurl = wx.StaticText(self.panel, label="URL", pos=(20,20))
+        self.server_url = wx.TextCtrl(self.panel, value="http://localhost:5000/", pos=(110,20), size=(250,-1))
 
-        self.saveButton =wx.Button(self.panel, label="Save", pos=(250,150))
-        self.closeButton =wx.Button(self.panel, label="Cancel", pos=(350,150))
+        self.saveButton =wx.Button(self.panel, label="Save", pos=(200,60))
+        self.closeButton =wx.Button(self.panel, label="Cancel", pos=(300,60))
         self.saveButton.Bind(wx.EVT_BUTTON, self.SaveConnString)
         self.closeButton.Bind(wx.EVT_BUTTON, self.OnQuit)
         self.Bind(wx.EVT_CLOSE, self.OnQuit)
@@ -131,19 +138,23 @@ class AddServerDialog(wx.Dialog):
         self.Destroy()
 
     def SaveConnString(self, event):
-        self.result_label = self.server_label.GetValue()
         self.result_url = self.server_url.GetValue()
-        self.result_picture = self.server_picture.GetValue()
 
-        if is_valid_input(self.result_label) and is_valid_input(self.result_url) and is_valid_input(self.result_picture):
+        if is_valid_input(self.result_url):
 
             try:
-                request = requests.head(self.result_url, verify=False, timeout=1)
+                request = requests.get(self.result_url, verify=False, timeout=1).json()
+                self.result_label = request.get("label")
+                self.result_url = request.get("url")
+                self.result_picture = request.get("image")
+
             except requests.exceptions.ConnectionError:
                 show_error_dialog(message="Not available: \"{}\" is not responding.".format(self.result_url), title="Connection Error")
             except requests.exceptions.Timeout:
                 show_error_dialog(message="Timeout : This url is not available at the moment", title="Timeout Error")
+            except ValueError:
+                show_error_dialog(message="Server Error : Not a valid LocalBox server", title="Server Error")
             else:
                 self.Destroy()
         else:
-            show_error_dialog(message="Please fill all the fields", title="Input Error")
+            show_error_dialog(message="Please type the server url", title="Input Error")
