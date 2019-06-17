@@ -127,7 +127,7 @@ def sqlite_execute(command, params=None):
         connection = sqlite_connect(filename)
         connection.text_factory = Binary
         cursor = connection.cursor()
-        logo_path = gui_utils.images_path("penguin.png")
+        logo_path = "http://104.45.14.234/media/logos/penguin.jpg"
         if init_db:
             for sql in ('CREATE TABLE sites (site char(255), client_id'
                         ' char(255), client_secret char(255), user char(255), token char(255));',
