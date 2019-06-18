@@ -1,4 +1,5 @@
 gpg/
+XDG_CACHE_HOME/
 *.pyc
 tmp
 build
