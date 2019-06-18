@@ -1,3 +1,4 @@
+sudo pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-18.04 wxpython
 sudo xdg-mime install --mode system /usr/localbox/x-localbox.xml
 sudo xdg-mime default localbox.desktop application/x-localbox
 sudo xdg-icon-resource install --size 32 --context mimetypes /usr/localbox/localbox.png application-x-localbox

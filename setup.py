@@ -4,7 +4,7 @@ import os
 from platform import system
 from setuptools import setup, find_packages
 from setuptools.command.install import install as InstallCommand
-from pip._internal import main as pipmain
+import pip
 
 try:
     from _winreg import *
@@ -74,7 +74,7 @@ class Install(InstallCommand):
     """ Customized setuptools install command which uses pip. """
 
     def run(self, *args, **kwargs):
-        pipmain(['install', '-U', '-f', 'https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-18.04', 'wxPython'])
+        pip.main(['install', '-U', '-f', 'https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-18.04', 'wxPython'])
         InstallCommand.run(self, *args, **kwargs)
 
 
@@ -82,11 +82,11 @@ setup(
     name="LocalBoxSync",
     version=VERSION_STRING,
     description='Desktop Client for the LocalBox',
-    cmdclass={'install': Install},
     packages=find_packages(),
     # py_modules=['gnupg'],
     install_requires=required,
     data_files=data_files,
+    # cmdclass={'install': Install},
     include_package_data=True,
     author="De Staat der Nederlanden",
     author_email="info@yourlocalbox.org",
