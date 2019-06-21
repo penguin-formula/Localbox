@@ -83,7 +83,6 @@ setup(
     version=VERSION_STRING,
     description='Desktop Client for the LocalBox',
     packages=find_packages(),
-    # py_modules=['gnupg'],
     install_requires=required,
     data_files=data_files,
     # cmdclass={'install': Install},

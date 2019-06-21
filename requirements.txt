@@ -1,5 +1,5 @@
 pycrypto
-python-gnupg
+python-gnupg==0.4.4
 six
 wheel
 wxPython>=4.0.4
