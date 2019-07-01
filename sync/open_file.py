@@ -3,13 +3,14 @@ import os
 from sync import defaults
 from sync.controllers.login_ctrl import LoginController
 from sync.localbox import LocalBox
+from sync.memory_fs import LocalBoxMemoryFS
 from sync.gui import gui_utils
 from logging import getLogger
 import sync.controllers.openfiles_ctrl as openfiles_ctrl
 from loxcommon import os_utils
 
 
-def open_file(data_dic):
+def open_file(data_dic, memory=False):
     # Get passphrase
     passphrase = LoginController().get_passphrase(data_dic["label"])
 
@@ -50,9 +51,15 @@ def open_file(data_dic):
     if os.path.exists(tmp_decoded_filename):
         os.remove(tmp_decoded_filename)
 
-    localfile = open(tmp_decoded_filename, 'wb')
-    localfile.write(decoded_contents)
-    localfile.close()
+    if not memory:
+        memory = LocalBoxMemoryFS()
+
+    if not memory:
+        localfile = open(tmp_decoded_filename, 'wb')
+        localfile.write(decoded_contents)
+        localfile.close()
+    else:
+        tmp_decoded_filename = memory.createfile(tmp_decoded_filename.split('/')[-1], decoded_contents)
 
     # Keep file in list of opened files
     openfiles_ctrl.add(tmp_decoded_filename)

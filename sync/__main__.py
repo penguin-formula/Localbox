@@ -22,6 +22,7 @@ from sync.gui import gui_utils
 from sync.gui.taskbar import taskbarmain
 from sync.heartbeat import Heartbeat
 from sync.localbox import LocalBox
+from sync.memory_fs import LocalBoxMemoryFS
 from sync.open_file import open_file
 from sync.notif.notif_handler import NotifHandler
 from sync.notif.notifs import Notifs
@@ -72,7 +73,7 @@ def run_event_daemon():
         create_watchdog(sync_item)
 
 
-def run_file_decryption(filename):
+def run_file_decryption(filename, memory=False):
     try:
         getLogger(__name__).info('Decrypting and opening file: %s', filename)
 
@@ -117,7 +118,7 @@ def run_file_decryption(filename):
         if app_is_running:
             file_to_open = Notifs().openFileReq(data_dic)
         else:
-            file_to_open = open_file(data_dic)
+            file_to_open = open_file(data_dic, memory)
 
         if file_to_open is not None and os.path.exists(file_to_open):
             open_file_ext(file_to_open)
@@ -133,45 +134,51 @@ def run_file_decryption(filename):
 
 
 if __name__ == '__main__':
-    if not exists(APPDIR):
-        mkdir(APPDIR)
-
-    if not isdir(dirname(LOG_PATH)):
-        makedirs(dirname(LOG_PATH))
-
-    configparser = SafeConfigParser()
-    configparser.read(SYNCINI_PATH)
-
-    if not configparser.has_section('logging'):
-        configparser.add_section('logging')
-        configparser.set('logging', 'console', 'True')
-
-    prepare_logging(configparser, log_path=LOG_PATH)
-    getLogger('gnupg').setLevel(ERROR)
-
-    getLogger(__name__).info("LocalBox Sync Version: %s (%s)", sync.__version__.VERSION_STRING,
-                             sync.__version__.git_version)
-
-    signal.signal(signal.SIGINT, openfiles_ctrl.remove_all)
-    signal.signal(signal.SIGTERM, openfiles_ctrl.remove_all)
     try:
-        # only on Windows
-        signal.signal(signal.CTRL_C_EVENT, openfiles_ctrl.remove_all)
-    except:
-        pass
+        memory = LocalBoxMemoryFS()
 
-    try:
-        sql = 'SELECT token FROM sites'
-        database_execute(sql)
-    except DatabaseError:
-        sql = 'ALTER TABLE sites ADD COLUMN TOKEN CHAR(255)'
-        database_execute(sql)
-        getLogger(__name__).debug('TOKEN column added to table SITES')
+        if not exists(APPDIR):
+            mkdir(APPDIR)
 
-    if len(sys.argv) > 1:
-        filename = ' '.join(sys.argv[1:])
+        if not isdir(dirname(LOG_PATH)):
+            makedirs(dirname(LOG_PATH))
 
-        run_file_decryption(filename)
-    else:
-        run_event_daemon()
-        run_sync_daemon()
+        configparser = SafeConfigParser()
+        configparser.read(SYNCINI_PATH)
+
+        if not configparser.has_section('logging'):
+            configparser.add_section('logging')
+            configparser.set('logging', 'console', 'True')
+
+        prepare_logging(configparser, log_path=LOG_PATH)
+        getLogger('gnupg').setLevel(ERROR)
+
+        getLogger(__name__).info("LocalBox Sync Version: %s (%s)", sync.__version__.VERSION_STRING,
+                                sync.__version__.git_version)
+
+        signal.signal(signal.SIGINT, openfiles_ctrl.remove_all)
+        signal.signal(signal.SIGTERM, openfiles_ctrl.remove_all)
+        try:
+            # only on Windows
+            signal.signal(signal.CTRL_C_EVENT, openfiles_ctrl.remove_all)
+        except:
+            pass
+
+        try:
+            sql = 'SELECT token FROM sites'
+            database_execute(sql)
+        except DatabaseError:
+            sql = 'ALTER TABLE sites ADD COLUMN TOKEN CHAR(255)'
+            database_execute(sql)
+            getLogger(__name__).debug('TOKEN column added to table SITES')
+
+        if len(sys.argv) > 1:
+            filename = ' '.join(sys.argv[1:])
+
+            run_file_decryption(filename, memory)
+        else:
+            run_event_daemon()
+            run_sync_daemon()
+    
+    finally:
+        memory.destroy()
