@@ -1,7 +1,8 @@
 import json
 import pickle
-import os.path
+import os
 from logging import getLogger
+from pathlib import Path
 
 import sync.models.label_model as label_model
 from sync.defaults import LOCALBOX_SITES_PATH
@@ -148,6 +149,11 @@ class SyncItem:
     @property
     def path(self):
         return self._path
+
+    @property
+    def size(self):
+        size = sum(f.stat().st_size for f in Path(self._path).rglob('*.lox')) / float(1024**2)
+        return "%.1f %s" % (size, "MB")
 
     @path.setter
     def path(self, value):

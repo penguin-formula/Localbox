@@ -97,7 +97,7 @@ class LocalBoxMemoryFS():
         return self.mount_directory + path
 
     def destroy(self):
-        time.sleep(2)
+        time.sleep(3)
         try:
             fuse.unmount(self.mount_directory)
             os.removedirs(self.mount_directory)

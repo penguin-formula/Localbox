@@ -1159,7 +1159,7 @@ class LocalboxListCtrl(wx.ListCtrl):
         # Add three columns to the list
         self.InsertColumn(0, _("Label"))
         self.InsertColumn(1, _("Path"))
-        self.InsertColumn(2, _("Status"))
+        self.InsertColumn(2, _("Size"))
         self.InsertColumn(3, _("Server"))
 
         self.SetColumnWidth(0, 100)
@@ -1172,7 +1172,7 @@ class LocalboxListCtrl(wx.ListCtrl):
         Read the syncs list from the controller
         """
         for item in self.ctrl.load():
-            self.Append((item.label, item.path, item.status, item.server))
+            self.Append((item.label, item.path, item.size, item.server))
 
     def selected(self):
         idx = 0
@@ -1218,14 +1218,15 @@ class LocalboxListCtrl(wx.ListCtrl):
         self.ctrl.save()
 
     def updateStatus(self, label, status):
-        for i in range(self.GetItemCount()):
-            item_label = self.GetItemText(i, 0)
-            item_text = self.GetItem(i, 2)
+        pass # Removed as field will be replaced by size
+        # for i in range(self.GetItemCount()):
+        #     item_label = self.GetItemText(i, 0)
+        #     item_text = self.GetItem(i, 2)
 
-            if item_label == label:
-                item_text.SetText("Online" if status else "Offline")
-                self.SetItem(item_text)
-                break
+        #     if item_label == label:
+        #         item_text.SetText("Online" if status else "Offline")
+        #         self.SetItem(item_text)
+        #         break
 
     def getServers(self):
         return get_server_list()
