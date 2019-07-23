@@ -9,3 +9,4 @@ pyzmq
 stdeb
 requests
 fs==0.5.0
+pathlib
